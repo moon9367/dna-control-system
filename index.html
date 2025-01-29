@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>온도 제어 시스템</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin: auto;
+            max-width: 600px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input[type="number"] {
+            width: 50%;
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        img {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+        #temperature-display, #led-status, #heater-status {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #555555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>온도 제어 시스템</h1>
+
+        <!-- 실시간 온도 표시 -->
+        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>
+        <div id="led-status">LED 상태: 꺼짐</div>
+        <div id="heater-status">히터 상태: 꺼짐</div>
+
+        <!-- 온도 설정 -->
+        <form action="/set_temp" method="post">
+            <label for="temperature">설정 온도:</label>
+            <input type="number" name="temperature" id="temperature" step="0.1" placeholder="예: 60.0">
+            <button type="submit">온도 설정</button>
+        </form>
+
+        <!-- 히터 ON/OFF -->
+        <form action="/heater" method="post">
+            <button name="action" value="ON">히터 ON</button>
+            <button name="action" value="OFF">히터 OFF</button>
+        </form>
+
+        <!-- LED ON/OFF -->
+        <form action="/led" method="post">
+            <button name="action" value="ON">LED ON</button>
+            <button name="action" value="OFF">LED OFF</button>
+        </form>
+
+        <!-- 사진 촬영 -->
+        <form action="/capture" method="post">
+            <button type="submit">사진 촬영</button>
+        </form>
+
+        <!-- 현재 사진 다운로드 -->
+        <form action="/download_current" method="get">
+            <button type="submit">현재 사진 다운로드</button>
+        </form>
+
+        <!-- 전체 사진 다운로드 -->
+        <form action="/download_all" method="get">
+            <button type="submit">전체 사진 다운로드</button>
+        </form>
+    </div>
+</body>
+</html>

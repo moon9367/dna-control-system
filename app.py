@@ -13,7 +13,7 @@ PHOTO_FOLDER = "/home/pi/photos"
 if not os.path.exists(PHOTO_FOLDER):
     os.makedirs(PHOTO_FOLDER)
 
-latest_photo_path = None  # 최신 사진 경로를 저장하는 변수
+latest_photo_path = None  # 최신 사진 경로를 저장하는 변수11
 
 
 @app.route("/")

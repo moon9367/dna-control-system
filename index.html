@@ -24,33 +24,17 @@
             margin-bottom: 20px;
             color: #333333;
         }
-        form {
-            margin-bottom: 20px;
-        }
         button {
             background-color: #4CAF50;
             color: white;
-            padding: 10px 20px;
-            margin: 10px;
+            padding: 10px;
+            margin: 5px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
         }
         button:hover {
             background-color: #45a049;
-        }
-        input[type="number"] {
-            width: 50%;
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-        }
-        img {
-            max-width: 100%;
-            margin-top: 20px;
         }
         #temperature-display, #led-status, #heater-status {
             font-size: 18px;
@@ -63,7 +47,7 @@
             fetch('/temperature')
             .then(response => response.json())
             .then(data => {
-                document.getElementById("current-temperature").innerText = data.temperature;
+                document.getElementById("current-temperature").innerText = data.temperature + "°C";
                 document.getElementById("led-status").innerText = "LED 상태: " + data.led;
                 document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
             })
@@ -75,75 +59,37 @@
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams(data)
-            }).then(response => {
-                if (!response.ok) throw new Error("네트워크 오류");
-                return response.text();
-            }).then(result => {
-                console.log("응답:", result);
-                updateStatus();
-            }).catch(error => console.error("POST 요청 오류:", error));
-        }
-
-        function setTemperature(event) {
-            event.preventDefault();
-            let temp = document.getElementById("temperature").value;
-            sendPostRequest("/set_temp", { temperature: temp });
-        }
-
-        function controlHeater(action) {
-            sendPostRequest("/heater", { action: action });
-        }
-
-        function controlLED(action) {
-            sendPostRequest("/led", { action: action });
+            }).then(() => updateStatus())
+            .catch(error => console.error("POST 요청 오류:", error));
         }
 
         function capturePhoto() {
             fetch("/capture", { method: "POST" })
-            .then(response => response.text())
-            .then(result => {
-                console.log(result);
-                document.getElementById("photo").src = "/static/photo.jpg?t=" + new Date().getTime(); // 사진 최신화
-            }).catch(error => console.error("사진 촬영 오류:", error));
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("photo").src = data.photo_url + "?t=" + new Date().getTime();
+            })
+            .catch(error => console.error("사진 촬영 오류:", error));
         }
 
-        function downloadPhoto() {
-            window.location.href = "/download_current";
-        }
-
-        function downloadAllPhotos() {
-            window.location.href = "/download_all";
-        }
-
-        setInterval(updateStatus, 5000); // 5초마다 상태 업데이트
+        setInterval(updateStatus, 5000);
     </script>
 </head>
 <body onload="updateStatus()">
     <div class="container">
         <h1>온도 제어 시스템</h1>
-
-        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>
+        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span></div>
         <div id="led-status">LED 상태: --</div>
         <div id="heater-status">히터 상태: --</div>
 
-        <form onsubmit="setTemperature(event)">
-            <label for="temperature">설정 온도:</label>
-            <input type="number" id="temperature" step="0.1" placeholder="예: 60.0">
-            <button type="submit">온도 설정</button>
-        </form>
+        <button onclick="sendPostRequest('/heater', { action: 'ON' })">히터 ON</button>
+        <button onclick="sendPostRequest('/heater', { action: 'OFF' })">히터 OFF</button>
 
-        <button onclick="controlHeater('ON')">히터 ON</button>
-        <button onclick="controlHeater('OFF')">히터 OFF</button>
-
-        <button onclick="controlLED('ON')">LED ON</button>
-        <button onclick="controlLED('OFF')">LED OFF</button>
+        <button onclick="sendPostRequest('/led', { action: 'ON' })">LED ON</button>
+        <button onclick="sendPostRequest('/led', { action: 'OFF' })">LED OFF</button>
 
         <button onclick="capturePhoto()">📷 사진 촬영</button>
-
         <img id="photo" src="/static/photo.jpg" alt="최근 촬영된 사진">
-
-        <button onclick="downloadPhoto()">📥 현재 사진 다운로드</button>
-        <button onclick="downloadAllPhotos()">📦 전체 사진 다운로드</button>
     </div>
 </body>
 </html>

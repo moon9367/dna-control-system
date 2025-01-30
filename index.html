@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,76 +24,127 @@
             margin-bottom: 20px;
             color: #333333;
         }
+        form {
+            margin-bottom: 20px;
+        }
         button {
             background-color: #4CAF50;
             color: white;
-            padding: 10px;
-            margin: 5px;
+            padding: 10px 20px;
+            margin: 10px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
         button:hover {
             background-color: #45a049;
+        }
+        input[type="number"] {
+            width: 50%;
+            padding: 10px;
+            margin: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        img {
+            max-width: 150px;
+            margin-bottom: 20px;
         }
         #temperature-display, #led-status, #heater-status {
             font-size: 18px;
             margin: 10px 0;
             color: #555555;
         }
+        #photo-preview {
+            margin-top: 20px;
+            display: none;
+        }
     </style>
-    <script>
-        function updateStatus() {
-            fetch('/temperature')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("current-temperature").innerText = data.temperature + "°C";
-                document.getElementById("led-status").innerText = "LED 상태: " + data.led;
-                document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
-            })
-            .catch(error => console.error("상태 업데이트 오류:", error));
-        }
-
-        function sendPostRequest(url, data) {
-            fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams(data)
-            }).then(() => updateStatus())
-            .catch(error => console.error("POST 요청 오류:", error));
-        }
-
-        function capturePhoto() {
-            fetch("/capture", { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("photo").src = data.photo_url + "?t=" + new Date().getTime();
-            })
-            .catch(error => console.error("사진 촬영 오류:", error));
-        }
-
-        setInterval(updateStatus, 5000);
-    </script>
 </head>
-<body onload="updateStatus()">
+<body>
     <div class="container">
+        <!-- 로고 -->
+        <img src="logo-1" alt="로고">
+
         <h1>온도 제어 시스템</h1>
 
-        <div>현재 온도: <span id="current-temperature">--</span></div>
-        <div id="led-status">LED 상태: --</div>
-        <div id="heater-status">히터 상태: --</div>
+        <!-- 실시간 온도 표시 -->
+        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>
 
-        <input type="number" id="temperature" placeholder="설정 온도 (°C)">
-        <button onclick="sendPostRequest('/set_temp', { temperature: document.getElementById('temperature').value })">온도 설정</button>
+        <!-- LED와 히터 상태 표시 -->
+        <div id="led-status">LED 상태: 꺼짐</div>
+        <div id="heater-status">히터 상태: 꺼짐</div>
 
-        <button onclick="sendPostRequest('/heater', { action: 'ON' })">히터 ON</button>
-        <button onclick="sendPostRequest('/heater', { action: 'OFF' })">히터 OFF</button>
+        <!-- 온도 설정 -->
+        <form action="/set_temp" method="post">
+            <label for="temperature">설정 온도:</label>
+            <input type="number" name="temperature" id="temperature" step="0.1" placeholder="예: 60.0">
+            <button type="submit">온도 설정</button>
+        </form>
 
-        <button onclick="sendPostRequest('/led', { action: 'ON' })">LED ON</button>
-        <button onclick="sendPostRequest('/led', { action: 'OFF' })">LED OFF</button>
+        <!-- 히터 ON/OFF -->
+        <form action="/heater" method="post">
+            <button name="action" value="ON">히터 ON</button>
+            <button name="action" value="OFF">히터 OFF</button>
+        </form>
 
-        <button onclick="capturePhoto()">📷 사진 촬영</button>
-        <img id="photo" src="/static/photo.jpg" alt="최근 촬영된 사진">
+        <!-- LED ON/OFF -->
+        <form action="/led" method="post">
+            <button name="action" value="ON">LED ON</button>
+            <button name="action" value="OFF">LED OFF</button>
+        </form>
+
+        <!-- 사진 촬영 -->
+        <form action="/capture" method="post" id="capture-form">
+            <button type="submit">사진 촬영</button>
+        </form>
+
+        <!-- 사진 저장 -->
+        <form action="/save_photo" method="post">
+            <button type="submit">사진 저장</button>
+        </form>
+
+        <!-- 사진 미리보기 -->
+        <div id="photo-preview">
+            <h3>촬영된 사진:</h3>
+            <img src="/static/photo.jpg" alt="사진 미리보기">
+        </div>
     </div>
+
+    <script>
+        // 실시간 온도 업데이트 및 상태 표시
+        function updateData() {
+            fetch('/temperature')
+                .then(response => response.json())
+                .then(data => {
+                    // 온도 업데이트
+                    document.getElementById("current-temperature").innerText = data.temperature;
+
+                    // LED 상태 업데이트
+                    document.getElementById("led-status").innerText = "LED 상태: " + (data.led === "ON" ? "켜짐" : "꺼짐");
+
+                    // 히터 상태 업데이트
+                    document.getElementById("heater-status").innerText = "히터 상태: " + (data.heater === "ON" ? "켜짐" : "꺼짐");
+                });
+        }
+
+        // 사진 촬영 후 미리보기
+        document.getElementById("capture-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+            fetch('/capture', { method: "POST" })
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const photoPreview = document.getElementById("photo-preview");
+                    photoPreview.style.display = "block";
+                    photoPreview.querySelector("img").src = url;
+                });
+        });
+
+        // 2초마다 데이터 업데이트
+        setInterval(updateData, 2000);
+    </script>
 </body>
 </html>

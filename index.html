@@ -85,19 +85,29 @@
         }
 
         function setTemperature(event) {
-            event.preventDefault();
-            let temp = document.getElementById("temperature").value;
-            sendPostRequest("/set_temp", { temperature: temp });
-        }
+    event.preventDefault();
+    let temp = document.getElementById("temperature").value;
+    sendPostRequest("/set_temp", { temperature: temp });  // ✅ JSON 키 소문자로統一
+}
 
-        function controlHeater(action) {
-            sendPostRequest("/heater", { action: action });
-        }
+function controlHeater(action) {
+    sendPostRequest("/heater", { action: action.toLowerCase() });  // ✅ 소문자로統一
+}
 
-        function controlLED(action) {
-            sendPostRequest("/led", { action: action });
-        }
+function controlLED(action) {
+    sendPostRequest("/led", { action: action.toLowerCase() });  // ✅ 소문자로統一
+}
 
+function updateStatus() {
+    fetch('/temperature')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("current-temperature").innerText = data.temperature; // ✅ 소수점 제거
+        document.getElementById("led-status").innerText = "LED 상태: " + data.led;
+        document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+    })
+    .catch(error => console.error("상태 업데이트 오류:", error));
+}
         function capturePhoto() {
             fetch("/capture", { method: "POST" })
             .then(response => response.json())

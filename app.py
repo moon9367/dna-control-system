@@ -35,61 +35,44 @@ def index():
 
 @app.route("/set_temp", methods=["POST"])
 def set_temp():
-    """목표 온도 설정"""
-    if not ser:
-        return jsonify({"error": "시리얼 포트 연결 실패"}), 500
-    
     data = request.get_json()
-    target_temp = data["temperature"]
-    ser.write(f"SET_TEMP:{target_temp}\n".encode())
-
+    target_temp = data["temperature"]  # ✅ JSON 키 소문자로統一
+    ser.write(f"set_temp:{target_temp}\n".encode())  # ✅ 명령어 소문자로統一
     response = ser.readline().decode().strip()
     return jsonify({"message": f"온도 설정: {target_temp}°C", "response": response})
 
 @app.route("/heater", methods=["POST"])
 def heater_control():
-    """히터 ON/OFF 제어"""
-    if not ser:
-        return jsonify({"error": "시리얼 포트 연결 실패"}), 500
-
     data = request.get_json()
-    action = data["action"].upper()
-    ser.write(f"HEATER_{action}\n".encode())
-
+    action = data["action"].lower()  # ✅ 소문자로統一
+    ser.write(f"heater_{action}\n".encode())
     response = ser.readline().decode().strip()
     return jsonify({"message": f"Heater {action}", "response": response})
 
 @app.route("/led", methods=["POST"])
 def led_control():
-    """LED ON/OFF 제어"""
-    if not ser:
-        return jsonify({"error": "시리얼 포트 연결 실패"}), 500
-
     data = request.get_json()
-    action = data["action"].upper()
-    ser.write(f"LED_{action}\n".encode())
-
+    action = data["action"].lower()  # ✅ 소문자로統一
+    ser.write(f"led_{action}\n".encode())
     response = ser.readline().decode().strip()
     return jsonify({"message": f"LED {action}", "response": response})
 
 @app.route("/temperature")
 def get_temperature():
-    """현재 온도, LED, 히터 상태 가져오기"""
     if not ser:
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
-    ser.write("GET_TEMP\n".encode())
-    
+    ser.write("get_temp\n".encode())
     response = ser.readlines()
     temp, led, heater = "", "", ""
 
     for line in response:
         line = line.decode().strip()
-        if line.startswith("TEMP:"):
-            temp = line.split(":")[1]
-        elif line.startswith("LED:"):
+        if line.startswith("temp:"):
+            temp = str(int(float(line.split(":")[1])))  # ✅ 소수점 제거
+        elif line.startswith("led:"):
             led = line.split(":")[1]
-        elif line.startswith("HEATER:"):
+        elif line.startswith("heater:"):
             heater = line.split(":")[1]
 
     return jsonify({

@@ -9,7 +9,7 @@ const float beta = 3950;         // NTC 열 저항 베타 값
 const int refTemp = 25;          // 기준 온도 (25°C)
 const int refResistance = 100000; // 기준 저항 값 (100kΩ)
 
-// 기본 목표 온도 (Flask에서 변경 가능)
+// 기본 목표 온도
 float targetTemperature = 60.0;
 
 void setup() {
@@ -18,9 +18,9 @@ void setup() {
     pinMode(ledPin, OUTPUT);
 }
 
-// 문자열을 대문자로 변환하는 함수
-String toUpperCase(String str) {
-    str.toUpperCase();
+// 문자열을 소문자로 변환하는 함수
+String toLowerCase(String str) {
+    str.toLowerCase();
     return str;
 }
 
@@ -28,37 +28,37 @@ void loop() {
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
         command.trim();
-        command = toUpperCase(command);  // 🚀 받은 명령어를 자동으로 대문자로 변환
+        command = toLowerCase(command);  // 🚀 받은 명령어를 자동으로 소문자로 변환
 
-        if (command.startsWith("SET_TEMP:")) {
+        if (command.startsWith("set_temp:")) {
             targetTemperature = command.substring(9).toFloat();
-            Serial.print("SET_TEMP_OK:");
+            Serial.print("set_temp_ok:");
             Serial.println(targetTemperature);
         } 
-        else if (command == "HEATER_ON") {
+        else if (command == "heater_on") {
             digitalWrite(heaterPin, HIGH);
-            Serial.println("HEATER_ON");
+            Serial.println("heater_on");
         } 
-        else if (command == "HEATER_OFF") {
+        else if (command == "heater_off") {
             digitalWrite(heaterPin, LOW);
-            Serial.println("HEATER_OFF");
+            Serial.println("heater_off");
         } 
-        else if (command == "LED_ON") {
+        else if (command == "led_on") {
             digitalWrite(ledPin, HIGH);
-            Serial.println("LED_ON");
+            Serial.println("led_on");
         } 
-        else if (command == "LED_OFF") {
+        else if (command == "led_off") {
             digitalWrite(ledPin, LOW);
-            Serial.println("LED_OFF");
+            Serial.println("led_off");
         } 
-        else if (command == "GET_TEMP") {
+        else if (command == "get_temp") {
             float temperature = readTemperature();
-            Serial.print("TEMP:");
+            Serial.print("temp:");
             Serial.println(temperature);
-            Serial.print("LED:");
-            Serial.println(digitalRead(ledPin) == HIGH ? "ON" : "OFF");
-            Serial.print("HEATER:");
-            Serial.println(digitalRead(heaterPin) == HIGH ? "ON" : "OFF");
+            Serial.print("led:");
+            Serial.println(digitalRead(ledPin) == HIGH ? "on" : "off");
+            Serial.print("heater:");
+            Serial.println(digitalRead(heaterPin) == HIGH ? "on" : "off");
         }
     }
 
@@ -66,15 +66,16 @@ void loop() {
     float currentTemperature = readTemperature();
     if (currentTemperature < targetTemperature) {
         digitalWrite(heaterPin, HIGH);
-        Serial.println("AUTO_HEATER_ON");
+        Serial.println("auto_heater_on");
     } else {
         digitalWrite(heaterPin, LOW);
-        Serial.println("AUTO_HEATER_OFF");
+        Serial.println("auto_heater_off");
     }
 
     delay(1000);
 }
 
+// test
 // 온도 센서 값 읽기 (NTC Thermistor 공식 적용)
 float readTemperature() {
     int analogValue = analogRead(tempSensorPin);

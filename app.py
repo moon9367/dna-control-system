@@ -24,10 +24,19 @@ def find_serial_port():
             return ser
         except serial.SerialException:
             continue
-    print("⚠️  Arduino 연결 실패: USB 포트 확인 필요")
+    print("⚠️ Arduino 연결 실패: USB 포트 확인 필요")
     return None
 
 ser = find_serial_port()
+
+# 사진 저장 경로
+PHOTO_FOLDER = "/home/aiseed/photos"
+STATIC_PHOTO_PATH = "/home/aiseed/dna-control-system/static/photo.jpg"
+latest_photo_path = None  # 최신 사진 경로 저장 변수
+
+# 폴더가 없으면 생성
+if not os.path.exists(PHOTO_FOLDER):
+    os.makedirs(PHOTO_FOLDER)
 
 @app.route("/")
 def index():
@@ -35,37 +44,34 @@ def index():
 
 @app.route("/set_temp", methods=["POST"])
 def set_temp():
+    """목표 온도 설정"""
     data = request.get_json()
-    target_temp = data["temperature"]  # ✅ JSON 키 소문자로統一
-    ser.write(f"set_temp:{target_temp}\n".encode())  # ✅ 명령어 소문자로統一
+    target_temp = data["temperature"]
+    ser.write(f"set_temp:{target_temp}\n".encode())
     response = ser.readline().decode().strip()
     return jsonify({"message": f"온도 설정: {target_temp}°C", "response": response})
 
 @app.route("/heater", methods=["POST"])
 def heater_control():
+    """히터 ON/OFF 제어"""
     data = request.get_json()
-    action = data["action"].lower()  # ✅ 소문자로統一
+    action = data["action"].lower()
     ser.write(f"heater_{action}\n".encode())
     response = ser.readline().decode().strip()
     return jsonify({"message": f"Heater {action}", "response": response})
 
 @app.route("/led", methods=["POST"])
 def led_control():
+    """LED ON/OFF 제어"""
     data = request.get_json()
-    action = data["action"].lower()  # ✅ 소문자로統一
-    command = f"led_{action}\n"
-    
-    print(f"LED 제어 요청: {command}")  # 🔥 터미널에서 요청 확인
-    ser.write(command.encode())  # ✅ Arduino에 명령 전송
-
-    response = ser.readline().decode().strip()  # ✅ Arduino의 응답 읽기
-    print(f"Arduino 응답: {response}")  # 🔥 Arduino 응답을 로그에 남기기
-    
+    action = data["action"].lower()
+    ser.write(f"led_{action}\n".encode())
+    response = ser.readline().decode().strip()
     return jsonify({"message": f"LED {action}", "response": response})
-
 
 @app.route("/temperature")
 def get_temperature():
+    """현재 온도, LED, 히터 상태 가져오기"""
     if not ser:
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
@@ -76,7 +82,7 @@ def get_temperature():
     for line in response:
         line = line.decode().strip()
         if line.startswith("temp:"):
-            temp = str(int(float(line.split(":")[1])))  # ✅ 소수점 제거
+            temp = str(int(float(line.split(":")[1])))  # 소수점 제거
         elif line.startswith("led:"):
             led = line.split(":")[1]
         elif line.startswith("heater:"):
@@ -87,6 +93,55 @@ def get_temperature():
         "led": led,
         "heater": heater,
     })
+
+@app.route("/capture", methods=["POST"])
+def capture_photo():
+    """사진 촬영 및 최신 사진 저장"""
+    global latest_photo_path
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
+
+    try:
+        # 사진 촬영 및 저장
+        picam2.capture_file(latest_photo_path)
+        print(f"📸 사진 촬영 완료: {latest_photo_path}")
+
+        # 최신 사진을 /static/photo.jpg 로 복사하여 웹에서 접근 가능하게 함
+        os.system(f"cp {latest_photo_path} {STATIC_PHOTO_PATH}")
+        print(f"📂 사진 복사 완료: {STATIC_PHOTO_PATH}")
+
+    except Exception as e:
+        print(f"❌ 사진 촬영 오류: {e}")
+        return jsonify({"error": "사진 촬영 실패"}), 500
+
+    return jsonify({"message": "사진 촬영 완료", "photo_url": f"/static/photo.jpg?t={timestamp}"})
+
+@app.route("/download_current", methods=["GET"])
+def download_current():
+    """현재 최신 사진 다운로드"""
+    if latest_photo_path is None or not os.path.exists(latest_photo_path):
+        print(f"❌ 다운로드 오류: 파일이 존재하지 않음 → {latest_photo_path}")
+        return "현재 다운로드할 사진이 없습니다.", 404
+
+    print(f"📥 다운로드 요청: {latest_photo_path}")
+    return send_file(latest_photo_path, as_attachment=True)
+
+@app.route("/download_all", methods=["GET"])
+def download_all():
+    """저장된 모든 사진을 ZIP 파일로 다운로드"""
+    zip_path = os.path.join(PHOTO_FOLDER, "photos.zip")
+
+    try:
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            for root, _, files in os.walk(PHOTO_FOLDER):
+                for file in files:
+                    zipf.write(os.path.join(root, file), file)
+        print(f"📦 ZIP 파일 생성 완료: {zip_path}")
+    except Exception as e:
+        print(f"❌ ZIP 파일 생성 오류: {e}")
+        return "ZIP 파일 생성 실패", 500
+
+    return send_file(zip_path, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

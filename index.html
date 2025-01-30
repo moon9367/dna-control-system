@@ -115,16 +115,14 @@ function updateStatus() {
     .catch(error => console.error("상태 업데이트 오류:", error));
 }
 
-// 5초마다 상태 갱신
-setInterval(updateStatus, 7000);
-
 function updateStatus() {
     fetch('/temperature')
     .then(response => response.json())
     .then(data => {
-        document.getElementById("current-temperature").innerText = data.temperature + "°C";
-        document.getElementById("led-status").innerText = "LED 상태: " + data.led;
-        document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+        let temp = data.temperature ? Math.round(data.temperature) + "°C" : "--";
+        document.getElementById("current-temperature").innerText = temp;
+        document.getElementById("led-status").innerText = "LED 상태: " + (data.led || "--");
+        document.getElementById("heater-status").innerText = "히터 상태: " + (data.heater || "--");
     })
     .catch(error => console.error("상태 업데이트 오류:", error));
 }

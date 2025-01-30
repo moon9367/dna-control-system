@@ -82,19 +82,22 @@ def get_temperature():
     if not ser:
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
-    with serial_lock:  # 🔥 시리얼 통신이 동시에 실행되지 않도록 잠금
+    with serial_lock:
         ser.write("get_temp\n".encode())
         ser.flush()
-        response = ser.readlines()
+        response = []
+        for _ in range(5):  # 최대 5번 읽기 시도
+            line = ser.readline().decode().strip()
+            if line:
+                response.append(line)
 
     temp, led, heater = "--", "--", "--"  # 기본값 설정
 
     for line in response:
-        line = line.decode().strip()
         if line.startswith("temp:"):
             try:
                 temp_value = float(line.split(":")[1])
-                temp = str(int(temp_value))  # 🔥 정수 변환
+                temp = str(int(temp_value))  # 정수 변환
             except ValueError:
                 temp = "--"
         elif line.startswith("led:"):
@@ -103,10 +106,11 @@ def get_temperature():
             heater = line.split(":")[1]
 
     return jsonify({
-        "temperature": temp,
+        "temperature": temp if temp != "--" else "0",  # 기본값 설정
         "led": led,
         "heater": heater,
     })
+
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():

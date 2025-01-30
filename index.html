@@ -65,18 +65,16 @@
         }
     </style>
     <script>
-        ffunction updateStatus() {
-    fetch('/temperature')
-    .then(response => response.json())
-    .then(data => {
-        let temp = data.temperature ? data.temperature : "--";  // 🔥 기본 값 처리
-        document.getElementById("current-temperature").innerText = temp + "°C";
-        document.getElementById("led-status").innerText = "LED 상태: " + (data.led || "--");
-        document.getElementById("heater-status").innerText = "히터 상태: " + (data.heater || "--");
-    })
-    .catch(error => console.error("상태 업데이트 오류:", error));
-}
-
+        function updateStatus() {
+            fetch('/temperature')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("current-temperature").innerText = Math.round(data.temperature); // ✅ 소수점 제거
+                document.getElementById("led-status").innerText = "LED 상태: " + data.led;
+                document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+            })
+            .catch(error => console.error("상태 업데이트 오류:", error));
+        }
 
         function sendPostRequest(url, data) {
             fetch(url, {
@@ -115,8 +113,6 @@ function updateStatus() {
         document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
     })
     .catch(error => console.error("상태 업데이트 오류:", error));
-    // 5초마다 상태 갱신
-setInterval(updateStatus, 5000);
 }
 function capturePhoto() {
             fetch("/capture", { method: "POST" })
@@ -160,7 +156,6 @@ function getLatestPhoto() {
 <body onload="updateStatus()">
     <div class="container">
         <img src="logo-1.png" alt="로고" class="logo">
-        
         <h1>온도 제어 시스템</h1>
 
         <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>

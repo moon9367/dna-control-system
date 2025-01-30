@@ -108,14 +108,14 @@ function updateStatus() {
     })
     .catch(error => console.error("상태 업데이트 오류:", error));
 }
-        function capturePhoto() {
-            fetch("/capture", { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                document.getElementById("photo").src = data.photo_url + "?t=" + new Date().getTime(); // ✅ 캐시 방지
-            }).catch(error => console.error("사진 촬영 오류:", error));
-        }
+function capturePhoto() {
+    fetch("/capture", { method: "POST" })
+    .then(response => response.json())
+    .then(data => {
+        let timestamp = new Date().getTime();  // 캐시 방지
+        document.getElementById("photo").src = data.photo_url + "?t=" + timestamp;
+    }).catch(error => console.error("사진 촬영 오류:", error));
+}
 
         function downloadPhoto() {
             window.location.href = "/download_current";

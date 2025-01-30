@@ -102,29 +102,26 @@ def capture_photo():
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
     try:
-        # 사진 촬영 및 저장
         picam2.capture_file(latest_photo_path)
-        print(f"📸 사진 촬영 완료: {latest_photo_path}")
+        print(f"사진 촬영 완료: {latest_photo_path}")
 
-        # 최신 사진을 /static/photo.jpg 로 복사하여 웹에서 접근 가능하게 함
-        os.system(f"cp {latest_photo_path} {STATIC_PHOTO_PATH}")
-        print(f"📂 사진 복사 완료: {STATIC_PHOTO_PATH}")
+        # 최신 파일명을 JSON 응답으로 반환
+        return jsonify({"message": "사진 촬영 완료", "photo_url": f"/photos/{os.path.basename(latest_photo_path)}"})
 
     except Exception as e:
-        print(f"❌ 사진 촬영 오류: {e}")
+        print(f"사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
-
-    return jsonify({"message": "사진 촬영 완료", "photo_url": f"/static/photo.jpg?t={timestamp}"})
 
 @app.route("/download_current", methods=["GET"])
 def download_current():
     """현재 최신 사진 다운로드"""
     if latest_photo_path is None or not os.path.exists(latest_photo_path):
-        print(f"❌ 다운로드 오류: 파일이 존재하지 않음 → {latest_photo_path}")
+        print(f"다운로드 오류: 파일이 존재하지 않음 → {latest_photo_path}")
         return "현재 다운로드할 사진이 없습니다.", 404
 
-    print(f"📥 다운로드 요청: {latest_photo_path}")
+    print(f"다운로드 요청: {latest_photo_path}")
     return send_file(latest_photo_path, as_attachment=True)
+
 
 @app.route("/download_all", methods=["GET"])
 def download_all():

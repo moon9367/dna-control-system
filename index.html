@@ -102,11 +102,20 @@ function updateStatus() {
     fetch('/temperature')
     .then(response => response.json())
     .then(data => {
-        document.getElementById("current-temperature").innerText = data.temperature + "°C";
-        document.getElementById("led-status").innerText = "LED 상태: " + data.led;
-        document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+        if (data.error) {
+            console.error("온도 데이터를 읽을 수 없습니다: ", data.error);
+            document.getElementById("current-temperature").innerText = "--";
+            document.getElementById("led-status").innerText = "LED 상태: --";
+            document.getElementById("heater-status").innerText = "히터 상태: --";
+        } else {
+            document.getElementById("current-temperature").innerText = data.temperature + "°C";
+            document.getElementById("led-status").innerText = "LED 상태: " + data.led;
+            document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+        }
     })
     .catch(error => console.error("상태 업데이트 오류:", error));
+}
+
 
     function capturePhoto() {
     fetch("/capture", { method: "POST" })
@@ -143,8 +152,8 @@ function getLatestPhoto() {
         function downloadAllPhotos() {
             window.location.href = "/download_all";
         }
-
         setInterval(updateStatus, 5000); // 5초마다 상태 업데이트
+        
     </script>
 </head>
 <body onload="updateStatus()">

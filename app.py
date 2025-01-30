@@ -91,6 +91,9 @@ def get_temperature():
             if line:
                 response.append(line)
 
+    if not response:
+        return jsonify({"error": "온도 값을 읽을 수 없음"}), 500
+
     temp, led, heater = "--", "--", "--"  # 기본값 설정
 
     for line in response:
@@ -110,6 +113,7 @@ def get_temperature():
         "led": led,
         "heater": heater,
     })
+
 
 
 @app.route("/capture", methods=["POST"])

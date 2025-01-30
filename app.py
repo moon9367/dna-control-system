@@ -95,8 +95,9 @@ def get_temperature():
     })
 @app.route("/capture", methods=["POST"])
 def capture_photo():
-    """사진 촬영 및 최신 사진 파일명 저장"""
+    """사진 촬영 후 최신 사진 파일명을 저장하고 반환"""
     global latest_photo_path
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
@@ -117,6 +118,14 @@ def get_latest_photo():
         return jsonify({"error": "사진이 존재하지 않습니다."}), 404
 
     return jsonify({"photo_name": os.path.basename(latest_photo_path)})
+
+@app.route("/photos/<filename>")
+def serve_photo(filename):
+    """웹에서 특정 파일 요청 시 제공"""
+    file_path = os.path.join(PHOTO_FOLDER, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path)
+    return "파일을 찾을 수 없습니다.", 404
 
 @app.route("/download_current", methods=["GET"])
 def download_current():

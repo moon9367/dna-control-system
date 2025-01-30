@@ -109,28 +109,32 @@ function updateStatus() {
     .catch(error => console.error("상태 업데이트 오류:", error));
 }
 function capturePhoto() {
-    fetch("/capture", { method: "POST" })
-    .then(response => response.json())
-    .then(data => {
-        getLatestPhoto();  // 📸 최신 사진 요청
-    }).catch(error => console.error("사진 촬영 오류:", error));
-}
+            fetch("/capture", { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.photo_name) {
+                    updatePhoto(data.photo_name);
+                }
+            }).catch(error => console.error("사진 촬영 오류:", error));
+        }
+
+        function updatePhoto(filename) {
+            let timestamp = new Date().getTime();  // 캐시 방지
+            document.getElementById("photo").src = "/photos/" + filename + "?t=" + timestamp;
+        }
 
 function getLatestPhoto() {
-    fetch("/latest_photo")
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error("사진 없음:", data.error);
-            return;
+            fetch("/latest_photo")
+            .then(response => response.json())
+            .then(data => {
+                if (data.photo_name) {
+                    updatePhoto(data.photo_name);
+                }
+            }).catch(error => console.error("최신 사진 불러오기 오류:", error));
         }
-        let timestamp = new Date().getTime();  // 캐시 방지
-        document.getElementById("photo").src = "/photos/" + data.photo_name + "?t=" + timestamp;
-    }).catch(error => console.error("최신 사진 불러오기 오류:", error));
-}
 
-// 페이지 로드 시 최신 사진 자동 요청
-window.onload = getLatestPhoto;
+        // 페이지 로드 시 최신 사진 자동 요청
+        window.onload = getLatestPhoto;
 
         function downloadPhoto() {
             window.location.href = "/download_current";

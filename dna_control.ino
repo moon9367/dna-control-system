@@ -28,43 +28,35 @@ void loop() {
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
         command.trim();
-        command = toLowerCase(command);  // 🚀 받은 명령어를 자동으로 소문자로 변환
+        command = toLowerCase(command);
 
         if (command.startsWith("set_temp:")) {
             targetTemperature = command.substring(9).toFloat();
             Serial.print("set_temp_ok:");
             Serial.println(targetTemperature);
-        } 
-        else if (command == "heater_on") {
+        } else if (command == "heater_on") {
             digitalWrite(heaterPin, HIGH);
             Serial.println("heater_on");
-        } 
-        else if (command == "heater_off") {
+        } else if (command == "heater_off") {
             digitalWrite(heaterPin, LOW);
             Serial.println("heater_off");
-        } 
-        else if (command == "led_on") {
-    digitalWrite(ledPin, HIGH);
-    Serial.println("led_on");  // ✅ Flask에서 응답을 받을 수 있도록 명확하게 전송
-} 
-else if (command == "led_off") {
-    digitalWrite(ledPin, LOW);
-    Serial.println("led_off");  // ✅ Flask에서 응답을 받을 수 있도록 명확하게 전송
-}
-
-        else if (command == "get_temp") {
-    float temperature = readTemperature();
-    Serial.print("temp:");
-    Serial.println(temperature, 1);  // 🔥 소수점 1자리까지만 출력
-    Serial.print("led:");
-    Serial.println(digitalRead(ledPin) == HIGH ? "on" : "off");
-    Serial.print("heater:");
-    Serial.println(digitalRead(heaterPin) == HIGH ? "on" : "off");
-}
-
+        } else if (command == "led_on") {
+            digitalWrite(ledPin, HIGH);
+            Serial.println("led_on");
+        } else if (command == "led_off") {
+            digitalWrite(ledPin, LOW);
+            Serial.println("led_off");
+        } else if (command == "get_temp") {
+            float temperature = readTemperature();
+            Serial.print("temp:");
+            Serial.println(temperature, 1);  // 소수점 1자리까지만 출력
+            Serial.print("led:");
+            Serial.println(digitalRead(ledPin) == HIGH ? "on" : "off");
+            Serial.print("heater:");
+            Serial.println(digitalRead(heaterPin) == HIGH ? "on" : "off");
+        }
     }
 
-    // 🌡️ 현재 온도가 목표 온도보다 낮으면 히터 ON, 높으면 OFF
     float currentTemperature = readTemperature();
     if (currentTemperature < targetTemperature) {
         digitalWrite(heaterPin, HIGH);
@@ -76,6 +68,7 @@ else if (command == "led_off") {
 
     delay(1000);
 }
+
 
 // test
 // 온도 센서 값 읽기 (NTC Thermistor 공식 적용)

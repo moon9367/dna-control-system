@@ -89,6 +89,7 @@ def get_temperature():
         for _ in range(5):  # 최대 5번 읽기 시도
             line = ser.readline().decode().strip()
             if line:
+                print(f"Received: {line}")  # 받은 응답 출력
                 response.append(line)
 
     if not response:
@@ -108,11 +109,14 @@ def get_temperature():
         elif line.startswith("heater:"):
             heater = line.split(":")[1]
 
+    print(f"Temperature: {temp}, LED: {led}, Heater: {heater}")
+
     return jsonify({
         "temperature": temp if temp != "--" else "0",  # 기본값 설정
         "led": led,
         "heater": heater,
     })
+
 
 
 

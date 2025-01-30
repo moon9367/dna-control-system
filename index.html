@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>온도 제어 시스템</title>
     <style>
+        .logo {
+        display: block;      /* 중앙 정렬 */
+        margin: 30px auto;   /* 위아래 여백 추가, 좌우 중앙 정렬 */
+        width: 350px;        /* 원하는 크기로 조정 */
+        height: auto;        /* 원본 비율 유지 */
+    }
         body {
             font-family: Arial, sans-serif;
             text-align: center;
@@ -149,6 +155,7 @@ function getLatestPhoto() {
 </head>
 <body onload="updateStatus()">
     <div class="container">
+        <img src="logo-1.png" alt="로고" class="logo">
         <h1>온도 제어 시스템</h1>
 
         <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>

@@ -75,24 +75,26 @@ def get_temperature():
     if not ser:
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
-    ser.write("get_temp\n".encode())
+    ser.write("get_temp\n".encode())  # Arduino에 온도 요청
     response = ser.readlines()
     temp, led, heater = "", "", ""
 
     for line in response:
         line = line.decode().strip()
         if line.startswith("temp:"):
-            temp = str(int(float(line.split(":")[1])))  # 소수점 제거
+            temp = str(int(float(line.split(":")[1])))  # 🔥 소수점 제거
         elif line.startswith("led:"):
             led = line.split(":")[1]
         elif line.startswith("heater:"):
             heater = line.split(":")[1]
 
+    print(f"📡 Flask 응답: 온도={temp}, LED={led}, 히터={heater}")  # 🔥 로그 추가
     return jsonify({
         "temperature": temp,
         "led": led,
         "heater": heater,
     })
+
 @app.route("/capture", methods=["POST"])
 def capture_photo():
     """사진 촬영 후 최신 사진 파일명을 저장하고 반환"""

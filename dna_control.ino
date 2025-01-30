@@ -1,11 +1,11 @@
 // 핀 정의
-const int tempSensorPin = A0;   // 서미스터 핀
-const int heaterPin = 9;        // PTC 히터 제어 핀
-const int ledPin = 10;          // LED 제어 핀
-const int resistorValue = 100000; // 서미스터 직렬 저항
-const float beta = 3950;        // 서미스터 베타 계수
-const int refTemp = 25;         // 기준 온도
-const int refResistance = 100000; // 서미스터 기준 저항33
+const int tempSensorPin = A0;   
+const int heaterPin = 9;        
+const int ledPin = 10;          
+const int resistorValue = 100000; 
+const float beta = 3950;        
+const int refTemp = 25;         
+const int refResistance = 100000; 
 
 float targetTemperature = 60.0;
 
@@ -16,13 +16,6 @@ void setup() {
 }
 
 void loop() {
-  float temperature = readTemperature();
-
-  // 현재 온도를 시리얼로 전송
-  Serial.print("Temperature:");
-  Serial.println(temperature);
-
-  // 라즈베리파이로부터 명령 수신
   if (Serial.available()) {
     String command = Serial.readString();
     command.trim();
@@ -33,19 +26,23 @@ void loop() {
       Serial.println(targetTemperature);
     } else if (command == "HEATER_ON") {
       digitalWrite(heaterPin, HIGH);
-      Serial.println("Heater turned ON");
+      Serial.println("HEATER_ON");
     } else if (command == "HEATER_OFF") {
       digitalWrite(heaterPin, LOW);
-      Serial.println("Heater turned OFF");
+      Serial.println("HEATER_OFF");
     } else if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH);
-      Serial.println("LED turned ON");
+      Serial.println("LED_ON");
     } else if (command == "LED_OFF") {
       digitalWrite(ledPin, LOW);
-      Serial.println("LED turned OFF");
+      Serial.println("LED_OFF");
+    } else if (command == "GET_TEMP") {
+      float temperature = readTemperature();
+      Serial.println(temperature);
+      Serial.println(digitalRead(ledPin) == HIGH ? "LED_ON" : "LED_OFF");
+      Serial.println(digitalRead(heaterPin) == HIGH ? "HEATER_ON" : "HEATER_OFF");
     }
   }
-
   delay(1000);
 }
 

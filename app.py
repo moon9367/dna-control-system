@@ -1,12 +1,18 @@
 import os
 from datetime import datetime
 from flask import Flask, render_template, request, send_file, jsonify
-from picamera import PiCamera
+from picamera2 import Picamera2
 import zipfile
 
 # Flask 설정
 app = Flask(__name__)
-camera = PiCamera()
+picam2 = Picamera2()
+
+# 해상도 설정 (예: 1920x1080)
+config = picam2.create_still_configuration(main={"size": (1920, 1080)})
+picam2.configure(config)
+picam2.start()
+
 
 # 사진 저장 경로
 PHOTO_FOLDER = "/home/pi/photos"

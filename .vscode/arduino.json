@@ -1,5 +1,6 @@
 {
     "configuration": "cpu=atmega328",
     "board": "arduino:avr:nano",
-    "sketch": "dna_control.ino"
+    "sketch": "dna_control.ino",
+    "port": "COM6"
 }

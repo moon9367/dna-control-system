@@ -53,14 +53,15 @@ else if (command == "led_off") {
 }
 
         else if (command == "get_temp") {
-            float temperature = readTemperature();
-            Serial.print("temp:");
-            Serial.println(temperature);
-            Serial.print("led:");
-            Serial.println(digitalRead(ledPin) == HIGH ? "on" : "off");
-            Serial.print("heater:");
-            Serial.println(digitalRead(heaterPin) == HIGH ? "on" : "off");
-        }
+    float temperature = readTemperature();
+    Serial.print("temp:");
+    Serial.println(temperature, 1);  // 🔥 소수점 1자리까지만 출력
+    Serial.print("led:");
+    Serial.println(digitalRead(ledPin) == HIGH ? "on" : "off");
+    Serial.print("heater:");
+    Serial.println(digitalRead(heaterPin) == HIGH ? "on" : "off");
+}
+
     }
 
     // 🌡️ 현재 온도가 목표 온도보다 낮으면 히터 ON, 높으면 OFF

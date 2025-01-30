@@ -76,17 +76,19 @@ def get_temperature():
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
     ser.write("get_temp\n".encode())  # Arduino에 온도 요청
+    ser.flush()  # 🔥 시리얼 버퍼 비우기
     response = ser.readlines()
-    temp, led, heater = "", "", ""
+
+    temp, led, heater = "--", "--", "--"  # 기본값 설정
 
     for line in response:
         line = line.decode().strip()
         if line.startswith("temp:"):
             try:
-                temp_value = float(line.split(":")[1])  # 🔥 안전한 변환 방식
-                temp = str(int(temp_value))  # 🔥 정수 변환 후 문자열로 저장
+                temp_value = float(line.split(":")[1])
+                temp = str(int(temp_value))  # 정수 변환
             except ValueError:
-                temp = "오류"  # 🔥 변환 실패 시 기본 값 설정
+                temp = "--"  # 변환 실패 시 기본 값 유지
         elif line.startswith("led:"):
             led = line.split(":")[1]
         elif line.startswith("heater:"):
@@ -97,6 +99,7 @@ def get_temperature():
         "led": led,
         "heater": heater,
     })
+
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():

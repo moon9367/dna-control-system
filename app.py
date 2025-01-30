@@ -15,11 +15,11 @@ picam2.start()
 
 
 # 사진 저장 경로
-PHOTO_FOLDER = "/home/pi/photos"
+PHOTO_FOLDER = "/home/aiseed/photos"  # 사용자 계정에 맞게 변경
 if not os.path.exists(PHOTO_FOLDER):
     os.makedirs(PHOTO_FOLDER)
 
-latest_photo_path = None  # 최신 사진 경로를 저장하는 변수11
+latest_photo_path = None  # 최신 사진 경로를 저장하는 변수
 
 
 @app.route("/")

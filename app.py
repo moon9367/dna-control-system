@@ -4,6 +4,9 @@ from datetime import datetime
 from flask import Flask, render_template, request, send_file, jsonify
 from picamera2 import Picamera2
 import zipfile
+import threading
+
+serial_lock = threading.Lock()
 
 # Flask 설정
 app = Flask(__name__)
@@ -69,15 +72,20 @@ def led_control():
     response = ser.readline().decode().strip()
     return jsonify({"message": f"LED {action}", "response": response})
 
+import threading
+
+serial_lock = threading.Lock()  # 🔥 시리얼 통신 충돌 방지
+
 @app.route("/temperature")
 def get_temperature():
     """현재 온도, LED, 히터 상태 가져오기"""
     if not ser:
         return jsonify({"error": "시리얼 포트 연결 실패"}), 500
 
-    ser.write("get_temp\n".encode())  # Arduino에 온도 요청
-    ser.flush()  # 🔥 시리얼 버퍼 비우기
-    response = ser.readlines()
+    with serial_lock:  # 🔥 시리얼 통신이 동시에 실행되지 않도록 잠금
+        ser.write("get_temp\n".encode())
+        ser.flush()
+        response = ser.readlines()
 
     temp, led, heater = "--", "--", "--"  # 기본값 설정
 
@@ -86,9 +94,9 @@ def get_temperature():
         if line.startswith("temp:"):
             try:
                 temp_value = float(line.split(":")[1])
-                temp = str(int(temp_value))  # 정수 변환
+                temp = str(int(temp_value))  # 🔥 정수 변환
             except ValueError:
-                temp = "--"  # 변환 실패 시 기본 값 유지
+                temp = "--"
         elif line.startswith("led:"):
             led = line.split(":")[1]
         elif line.startswith("heater:"):
@@ -100,24 +108,25 @@ def get_temperature():
         "heater": heater,
     })
 
-
 @app.route("/capture", methods=["POST"])
 def capture_photo():
-    """사진 촬영 후 최신 사진 파일명을 저장하고 반환"""
+    """사진 촬영 및 최신 사진 저장"""
     global latest_photo_path
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
     try:
-        picam2.capture_file(latest_photo_path)
-        print(f"사진 촬영 완료: {latest_photo_path}")
+        with serial_lock:  # 🔥 사진 촬영 시에도 Serial 충돌 방지
+            picam2.capture_file(latest_photo_path)
+            print(f"사진 촬영 완료: {latest_photo_path}")
 
     except Exception as e:
         print(f"사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
 
     return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
+
 
 @app.route("/latest_photo", methods=["GET"])
 def get_latest_photo():

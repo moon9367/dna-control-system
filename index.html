@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,8 +49,8 @@
             border: 1px solid #ddd;
         }
         img {
-            max-width: 150px;
-            margin-bottom: 20px;
+            max-width: 100%;
+            margin-top: 20px;
         }
         #temperature-display, #led-status, #heater-status {
             font-size: 18px;
@@ -58,85 +58,92 @@
             color: #555555;
         }
     </style>
+    <script>
+        function updateStatus() {
+            fetch('/temperature')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("current-temperature").innerText = data.temperature;
+                document.getElementById("led-status").innerText = "LED 상태: " + data.led;
+                document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+            })
+            .catch(error => console.error("상태 업데이트 오류:", error));
+        }
+
+        function sendPostRequest(url, data) {
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(data)
+            }).then(response => {
+                if (!response.ok) throw new Error("네트워크 오류");
+                return response.text();
+            }).then(result => {
+                console.log("응답:", result);
+                updateStatus();
+            }).catch(error => console.error("POST 요청 오류:", error));
+        }
+
+        function setTemperature(event) {
+            event.preventDefault();
+            let temp = document.getElementById("temperature").value;
+            sendPostRequest("/set_temp", { temperature: temp });
+        }
+
+        function controlHeater(action) {
+            sendPostRequest("/heater", { action: action });
+        }
+
+        function controlLED(action) {
+            sendPostRequest("/led", { action: action });
+        }
+
+        function capturePhoto() {
+            fetch("/capture", { method: "POST" })
+            .then(response => response.text())
+            .then(result => {
+                console.log(result);
+                document.getElementById("photo").src = "/static/photo.jpg?t=" + new Date().getTime(); // 사진 최신화
+            }).catch(error => console.error("사진 촬영 오류:", error));
+        }
+
+        function downloadPhoto() {
+            window.location.href = "/download_current";
+        }
+
+        function downloadAllPhotos() {
+            window.location.href = "/download_all";
+        }
+
+        setInterval(updateStatus, 5000); // 5초마다 상태 업데이트
+    </script>
 </head>
-<body>
+<body onload="updateStatus()">
     <div class="container">
         <h1>온도 제어 시스템</h1>
 
-        <!-- 실시간 온도 표시 -->
         <div id="temperature-display">현재 온도: <span id="current-temperature">--</span>°C</div>
-        <div id="led-status">LED 상태: 꺼짐</div>
-        <div id="heater-status">히터 상태: 꺼짐</div>
+        <div id="led-status">LED 상태: --</div>
+        <div id="heater-status">히터 상태: --</div>
 
-        <!-- 온도 설정 -->
-        <form id="temp-form">
+        <form onsubmit="setTemperature(event)">
             <label for="temperature">설정 온도:</label>
-            <input type="number" name="temperature" id="temperature" step="0.1" placeholder="예: 60.0">
+            <input type="number" id="temperature" step="0.1" placeholder="예: 60.0">
             <button type="submit">온도 설정</button>
         </form>
 
-        <!-- 히터 ON/OFF -->
-        <form id="heater-form">
-            <button name="action" value="ON">히터 ON</button>
-            <button name="action" value="OFF">히터 OFF</button>
-        </form>
+        <button onclick="controlHeater('ON')">히터 ON</button>
+        <button onclick="controlHeater('OFF')">히터 OFF</button>
 
-        <!-- LED ON/OFF -->
-        <form id="led-form">
-            <button name="action" value="ON">LED ON</button>
-            <button name="action" value="OFF">LED OFF</button>
-        </form>
+        <button onclick="controlLED('ON')">LED ON</button>
+        <button onclick="controlLED('OFF')">LED OFF</button>
 
-        <!-- 사진 촬영 -->
-        <form id="capture-form">
-            <button type="submit">사진 촬영</button>
-        </form>
+        <button onclick="capturePhoto()">📷 사진 촬영</button>
 
-        <!-- 현재 사진 다운로드 -->
-        <form action="/download_current" method="get">
-            <button type="submit">현재 사진 다운로드</button>
-        </form>
+        <img id="photo" src="/static/photo.jpg" alt="최근 촬영된 사진">
 
-        <!-- 전체 사진 다운로드 -->
-        <form action="/download_all" method="get">
-            <button type="submit">전체 사진 다운로드</button>
-        </form>
+        <button onclick="downloadPhoto()">📥 현재 사진 다운로드</button>
+        <button onclick="downloadAllPhotos()">📦 전체 사진 다운로드</button>
     </div>
-
-    <script>
-        // 🔹 버튼 클릭 시 페이지 새로고침 방지 & AJAX 요청
-        function sendCommand(formId, endpoint) {
-            document.getElementById(formId).addEventListener("submit", function(event) {
-                event.preventDefault();
-                const formData = new FormData(this);
-                fetch(endpoint, {
-                    method: "POST",
-                    body: formData
-                }).then(response => response.text())
-                  .then(data => console.log(data))
-                  .catch(error => console.error("Error:", error));
-            });
-        }
-
-        // 🔹 버튼 이벤트 리스너 등록
-        sendCommand("temp-form", "/set_temp");
-        sendCommand("heater-form", "/heater");
-        sendCommand("led-form", "/led");
-        sendCommand("capture-form", "/capture");
-
-        // 🔹 온도, LED, 히터 상태를 2초마다 업데이트
-        function updateStatus() {
-            fetch("/temperature")
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("current-temperature").innerText = data.temperature;
-                    document.getElementById("led-status").innerText = "LED 상태: " + (data.led === "ON" ? "켜짐" : "꺼짐");
-                    document.getElementById("heater-status").innerText = "히터 상태: " + (data.heater === "ON" ? "켜짐" : "꺼짐");
-                })
-                .catch(error => console.error("Error fetching temperature:", error));
-        }
-
-        setInterval(updateStatus, 2000); // 2초마다 상태 업데이트
-    </script>
 </body>
 </html>

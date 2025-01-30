@@ -82,13 +82,16 @@ def get_temperature():
     for line in response:
         line = line.decode().strip()
         if line.startswith("temp:"):
-            temp = str(int(float(line.split(":")[1])))  # 🔥 소수점 제거
+            try:
+                temp_value = float(line.split(":")[1])  # 🔥 안전한 변환 방식
+                temp = str(int(temp_value))  # 🔥 정수 변환 후 문자열로 저장
+            except ValueError:
+                temp = "오류"  # 🔥 변환 실패 시 기본 값 설정
         elif line.startswith("led:"):
             led = line.split(":")[1]
         elif line.startswith("heater:"):
             heater = line.split(":")[1]
 
-    print(f"📡 Flask 응답: 온도={temp}, LED={led}, 히터={heater}")  # 🔥 로그 추가
     return jsonify({
         "temperature": temp,
         "led": led,

@@ -93,10 +93,9 @@ def get_temperature():
         "led": led,
         "heater": heater,
     })
-
 @app.route("/capture", methods=["POST"])
 def capture_photo():
-    """사진 촬영 및 최신 사진 저장"""
+    """사진 촬영 및 최신 사진 파일명 저장"""
     global latest_photo_path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
@@ -105,21 +104,26 @@ def capture_photo():
         picam2.capture_file(latest_photo_path)
         print(f"사진 촬영 완료: {latest_photo_path}")
 
-        # 최신 파일명을 JSON 응답으로 반환
-        return jsonify({"message": "사진 촬영 완료", "photo_url": f"/photos/{os.path.basename(latest_photo_path)}"})
-
     except Exception as e:
         print(f"사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
+
+    return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
+
+@app.route("/latest_photo", methods=["GET"])
+def get_latest_photo():
+    """현재 최신 사진 파일명을 웹으로 전달"""
+    if latest_photo_path is None or not os.path.exists(latest_photo_path):
+        return jsonify({"error": "사진이 존재하지 않습니다."}), 404
+
+    return jsonify({"photo_name": os.path.basename(latest_photo_path)})
 
 @app.route("/download_current", methods=["GET"])
 def download_current():
     """현재 최신 사진 다운로드"""
     if latest_photo_path is None or not os.path.exists(latest_photo_path):
-        print(f"다운로드 오류: 파일이 존재하지 않음 → {latest_photo_path}")
         return "현재 다운로드할 사진이 없습니다.", 404
 
-    print(f"다운로드 요청: {latest_photo_path}")
     return send_file(latest_photo_path, as_attachment=True)
 
 

@@ -112,10 +112,25 @@ function capturePhoto() {
     fetch("/capture", { method: "POST" })
     .then(response => response.json())
     .then(data => {
-        let timestamp = new Date().getTime();  // 캐시 방지
-        document.getElementById("photo").src = data.photo_url + "?t=" + timestamp;
+        getLatestPhoto();  // 📸 최신 사진 요청
     }).catch(error => console.error("사진 촬영 오류:", error));
 }
+
+function getLatestPhoto() {
+    fetch("/latest_photo")
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error("사진 없음:", data.error);
+            return;
+        }
+        let timestamp = new Date().getTime();  // 캐시 방지
+        document.getElementById("photo").src = "/photos/" + data.photo_name + "?t=" + timestamp;
+    }).catch(error => console.error("최신 사진 불러오기 오류:", error));
+}
+
+// 페이지 로드 시 최신 사진 자동 요청
+window.onload = getLatestPhoto;
 
         function downloadPhoto() {
             window.location.href = "/download_current";

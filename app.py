@@ -53,9 +53,16 @@ def heater_control():
 def led_control():
     data = request.get_json()
     action = data["action"].lower()  # ✅ 소문자로統一
-    ser.write(f"led_{action}\n".encode())
-    response = ser.readline().decode().strip()
+    command = f"led_{action}\n"
+    
+    print(f"LED 제어 요청: {command}")  # 🔥 터미널에서 요청 확인
+    ser.write(command.encode())  # ✅ Arduino에 명령 전송
+
+    response = ser.readline().decode().strip()  # ✅ Arduino의 응답 읽기
+    print(f"Arduino 응답: {response}")  # 🔥 Arduino 응답을 로그에 남기기
+    
     return jsonify({"message": f"LED {action}", "response": response})
+
 
 @app.route("/temperature")
 def get_temperature():

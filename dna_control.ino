@@ -44,13 +44,14 @@ void loop() {
             Serial.println("heater_off");
         } 
         else if (command == "led_on") {
-            digitalWrite(ledPin, HIGH);
-            Serial.println("led_on");
-        } 
-        else if (command == "led_off") {
-            digitalWrite(ledPin, LOW);
-            Serial.println("led_off");
-        } 
+    digitalWrite(ledPin, HIGH);
+    Serial.println("led_on");  // ✅ Flask에서 응답을 받을 수 있도록 명확하게 전송
+} 
+else if (command == "led_off") {
+    digitalWrite(ledPin, LOW);
+    Serial.println("led_off");  // ✅ Flask에서 응답을 받을 수 있도록 명확하게 전송
+}
+
         else if (command == "get_temp") {
             float temperature = readTemperature();
             Serial.print("temp:");

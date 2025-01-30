@@ -78,9 +78,13 @@
 <body onload="updateStatus()">
     <div class="container">
         <h1>온도 제어 시스템</h1>
-        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span></div>
+
+        <div>현재 온도: <span id="current-temperature">--</span></div>
         <div id="led-status">LED 상태: --</div>
         <div id="heater-status">히터 상태: --</div>
+
+        <input type="number" id="temperature" placeholder="설정 온도 (°C)">
+        <button onclick="sendPostRequest('/set_temp', { temperature: document.getElementById('temperature').value })">온도 설정</button>
 
         <button onclick="sendPostRequest('/heater', { action: 'ON' })">히터 ON</button>
         <button onclick="sendPostRequest('/heater', { action: 'OFF' })">히터 OFF</button>

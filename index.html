@@ -60,22 +60,23 @@
     </style>
     <script>
         function updateStatus() {
-            fetch('/temperature')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error("온도 데이터를 읽을 수 없습니다: ", data.error);
-                    document.getElementById("current-temperature").innerText = "--";
-                    document.getElementById("led-status").innerText = "LED 상태: --";
-                    document.getElementById("heater-status").innerText = "히터 상태: --";
-                } else {
-                    document.getElementById("current-temperature").innerText = Math.round(data.temperature) + "°C"; // 온도에 C 추가
-                    document.getElementById("led-status").innerText = "LED 상태: " + data.led;
-                    document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
-                }
-            })
-            .catch(error => console.error("상태 업데이트 오류:", error));
+    fetch('/temperature')
+    .then(response => response.json())
+    .then(data => {
+        console.log("Received data:", data);  // 응답 데이터 로그 출력
+        if (data.error) {
+            console.error("온도 데이터를 읽을 수 없습니다: ", data.error);
+            document.getElementById("current-temperature").innerText = "--";
+            document.getElementById("led-status").innerText = "LED 상태: --";
+            document.getElementById("heater-status").innerText = "히터 상태: --";
+        } else {
+            document.getElementById("current-temperature").innerText = Math.round(data.temperature) + "°C";
+            document.getElementById("led-status").innerText = "LED 상태: " + data.led;
+            document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
         }
+    })
+    .catch(error => console.error("상태 업데이트 오류:", error));
+}
 
         function sendPostRequest(url, data) {
             fetch(url, {

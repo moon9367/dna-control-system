@@ -98,7 +98,7 @@ def get_temperature():
     temp, led, heater = "--", "--", "--"  # 기본값 설정
 
     for line in response:
-        if line.startswith("temp:"):
+        if line.startswith("Temperature:"):
             try:
                 temp_value = float(line.split(":")[1])
                 temp = str(int(temp_value))  # 정수 변환
@@ -116,6 +116,7 @@ def get_temperature():
         "led": led,
         "heater": heater,
     })
+
 
 
 

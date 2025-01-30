@@ -114,22 +114,23 @@ def get_temperature():
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():
-    """사진 촬영 및 최신 사진 저장"""
+    """사진 촬영 후 최신 사진 파일명을 저장하고 반환"""
     global latest_photo_path
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
     try:
-        with serial_lock:  # 🔥 사진 촬영 시에도 Serial 충돌 방지
-            picam2.capture_file(latest_photo_path)
-            print(f"사진 촬영 완료: {latest_photo_path}")
+        picam2.capture_file(latest_photo_path)
+        print(f"사진 촬영 완료: {latest_photo_path}")
 
     except Exception as e:
         print(f"사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
 
     return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
+
+
 
 
 @app.route("/latest_photo", methods=["GET"])

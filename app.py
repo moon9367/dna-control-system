@@ -131,17 +131,26 @@ def download_all():
     """저장된 모든 사진을 ZIP 파일로 다운로드"""
     zip_path = os.path.join(PHOTO_FOLDER, "photos.zip")
 
+    # 폴더 내 파일 확인
+    photo_files = [f for f in os.listdir(PHOTO_FOLDER) if f.endswith(".jpg")]
+
+    if not photo_files:
+        print("다운로드 실패: 폴더 내 사진 없음")
+        return "폴더에 저장된 사진이 없습니다.", 404
+
     try:
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
-            for root, _, files in os.walk(PHOTO_FOLDER):
-                for file in files:
-                    zipf.write(os.path.join(root, file), file)
-        print(f"📦 ZIP 파일 생성 완료: {zip_path}")
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file in photo_files:
+                file_path = os.path.join(PHOTO_FOLDER, file)
+                zipf.write(file_path, os.path.basename(file))  # ZIP에 추가
+
+        print(f"ZIP 파일 생성 완료: {zip_path}")
     except Exception as e:
-        print(f"❌ ZIP 파일 생성 오류: {e}")
+        print(f"ZIP 파일 생성 오류: {e}")
         return "ZIP 파일 생성 실패", 500
 
     return send_file(zip_path, as_attachment=True)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

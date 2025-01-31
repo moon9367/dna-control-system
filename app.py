@@ -82,14 +82,14 @@ def led_control():
     """LED ON/OFF 제어"""
     data = request.get_json()
     action = data["action"].lower()
-    command = "a" if action == "on" else "b"
+    command = "a\n" if action == "on" else "b\n"  # 명령어 끝에 개행 문자 추가
 
-    print(f"✅ LED 요청 받음: {action}")  # 요청 확인
-    print(f"➡️ 아두이노로 전송: {command}")  # 아두이노로 보낼 값 확인
+    print(f"✅ LED 요청 받음: {action}")
+    print(f"➡️ 아두이노로 전송: {command.strip()}")
 
     if ser:
-        ser.write(f"{command}\n".encode())  # 아두이노로 명령 전송
-        ser.flush()  # 시리얼 버퍼 초기화
+        ser.write(command.encode())  # 개행 포함하여 전송
+        ser.flush()
     else:
         print("⚠️ 시리얼 포트 연결 안됨!")
 
@@ -101,9 +101,19 @@ def heater_control():
     """PTC 히터 ON/OFF 제어"""
     data = request.get_json()
     action = data["action"].lower()
-    command = heater_on if action == "on" else heater_off
-    ser.write(f"{command}\n".encode())
+    command = "c\n" if action == "on" else "d\n"
+
+    print(f"✅ 히터 요청 받음: {action}")
+    print(f"➡️ 아두이노로 전송: {command.strip()}")
+
+    if ser:
+        ser.write(command.encode())  # 개행 포함하여 전송
+        ser.flush()
+    else:
+        print("⚠️ 시리얼 포트 연결 안됨!")
+
     return jsonify({"message": f"Heater {action} 명령 전송 완료"})
+
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():

@@ -1,12 +1,11 @@
 import os
 import serial
+import threading
+import time
 from datetime import datetime
-from flask import Flask, render_template, request, send_file, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from picamera2 import Picamera2
 import zipfile
-import threading
-
-serial_lock = threading.Lock()
 
 # Flask 설정
 app = Flask(__name__)
@@ -16,6 +15,14 @@ picam2 = Picamera2()
 config = picam2.create_still_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
 picam2.start()
+
+# 사진 저장 폴더
+PHOTO_FOLDER = "/home/aiseed/photos"
+latest_photo_path = None  # 최신 사진 경로 저장 변수
+
+# 폴더가 없으면 생성
+if not os.path.exists(PHOTO_FOLDER):
+    os.makedirs(PHOTO_FOLDER)
 
 # 아두이노 시리얼 포트 자동 감지
 def find_serial_port():
@@ -32,94 +39,61 @@ def find_serial_port():
 
 ser = find_serial_port()
 
-# 사진 저장 경로
-PHOTO_FOLDER = "/home/aiseed/photos"
-STATIC_PHOTO_PATH = "/home/aiseed/dna-control-system/static/photo.jpg"
-latest_photo_path = None  # 최신 사진 경로 저장 변수
+# LED 및 PTC 히터 명령 코드
+led_on = "a"
+led_off = "b"
+heater_on = "c"
+heater_off = "d"
 
-# 폴더가 없으면 생성
-if not os.path.exists(PHOTO_FOLDER):
-    os.makedirs(PHOTO_FOLDER)
+# 📡 실시간 온도 저장 변수
+current_temperature = "0"
+
+def read_temperature():
+    """아두이노에서 지속적으로 온도 데이터를 읽어와 저장하는 백그라운드 작업"""
+    global current_temperature
+    while True:
+        if ser:
+            try:
+                ser.write("g\n".encode())  # 온도 요청
+                temp = ser.readline().decode().strip()
+                if temp:
+                    current_temperature = temp
+                    print(f"📡 현재 온도: {current_temperature}°C")
+            except Exception as e:
+                print(f"❌ 온도 읽기 오류: {e}")
+                current_temperature = "0"
+        time.sleep(2)  # 2초마다 온도 요청
+
+# 🔥 온도 모니터링 스레드 시작
+threading.Thread(target=read_temperature, daemon=True).start()
 
 @app.route("/")
 def index():
+    """웹 UI 렌더링"""
     return render_template("index.html")
 
-@app.route("/set_temp", methods=["POST"])
-def set_temp():
-    """목표 온도 설정"""
-    data = request.get_json()
-    target_temp = data["temperature"]
-    ser.write(f"set_temp:{target_temp}\n".encode())
-    response = ser.readline().decode().strip()
-    return jsonify({"message": f"온도 설정: {target_temp}°C", "response": response})
-
-@app.route("/heater", methods=["POST"])
-def heater_control():
-    """히터 ON/OFF 제어"""
-    data = request.get_json()
-    action = data["action"].lower()
-    ser.write(f"heater_{action}\n".encode())
-    response = ser.readline().decode().strip()
-    return jsonify({"message": f"Heater {action}", "response": response})
+@app.route("/temperature")
+def get_temperature():
+    """현재 저장된 온도 데이터를 반환"""
+    return jsonify({"temperature": current_temperature})
 
 @app.route("/led", methods=["POST"])
 def led_control():
     """LED ON/OFF 제어"""
     data = request.get_json()
     action = data["action"].lower()
-    ser.write(f"led_{action}\n".encode())
-    response = ser.readline().decode().strip()
-    return jsonify({"message": f"LED {action}", "response": response})
+    command = led_on if action == "on" else led_off
+    ser.write(f"{command}\n".encode())
+    return jsonify({"message": f"LED {action} 명령 전송 완료"})
 
-import threading
-
-serial_lock = threading.Lock()  # 🔥 시리얼 통신 충돌 방지
-
-@app.route("/temperature")
-def get_temperature():
-    """현재 온도, LED, 히터 상태 가져오기"""
-    if not ser:
-        return jsonify({"error": "시리얼 포트 연결 실패"}), 500
-
-    with serial_lock:
-        ser.write("get_temp\n".encode())
-        ser.flush()
-        response = []
-        for _ in range(5):  # 최대 5번 읽기 시도
-            line = ser.readline().decode().strip()
-            if line:
-                print(f"Received: {line}")  # 받은 응답 출력
-                response.append(line)
-
-    if not response:
-        return jsonify({"error": "온도 값을 읽을 수 없음"}), 500
-
-    temp, led, heater = "--", "--", "--"  # 기본값 설정
-
-    for line in response:
-        if line.startswith("Temperature:"):
-            try:
-                temp_value = float(line.split(":")[1])
-                temp = str(int(temp_value))  # 정수 변환
-            except ValueError:
-                temp = "--"
-        elif line.startswith("led:"):
-            led = line.split(":")[1]
-        elif line.startswith("heater:"):
-            heater = line.split(":")[1]
-
-    print(f"Temperature: {temp}, LED: {led}, Heater: {heater}")
-
-    return jsonify({
-        "temperature": temp if temp != "--" else "0",  # 기본값 설정
-        "led": led,
-        "heater": heater,
-    })
-
-
-
-
+@app.route("/heater", methods=["POST"])
+def heater_control():
+    """PTC 히터 ON/OFF 제어"""
+    data = request.get_json()
+    action = data["action"].lower()
+    command = heater_on if action == "on" else heater_off
+    ser.write(f"{command}\n".encode())
+    return jsonify({"message": f"Heater {action} 명령 전송 완료"})
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():
@@ -131,16 +105,13 @@ def capture_photo():
 
     try:
         picam2.capture_file(latest_photo_path)
-        print(f"사진 촬영 완료: {latest_photo_path}")
+        print(f"📸 사진 촬영 완료: {latest_photo_path}")
 
     except Exception as e:
-        print(f"사진 촬영 오류: {e}")
+        print(f"❌ 사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
 
     return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
-
-
-
 
 @app.route("/latest_photo", methods=["GET"])
 def get_latest_photo():
@@ -166,7 +137,6 @@ def download_current():
 
     return send_file(latest_photo_path, as_attachment=True)
 
-
 @app.route("/download_all", methods=["GET"])
 def download_all():
     """저장된 모든 사진을 ZIP 파일로 다운로드"""
@@ -176,7 +146,7 @@ def download_all():
     photo_files = [f for f in os.listdir(PHOTO_FOLDER) if f.endswith(".jpg")]
 
     if not photo_files:
-        print("다운로드 실패: 폴더 내 사진 없음")
+        print("❌ 다운로드 실패: 폴더 내 사진 없음")
         return "폴더에 저장된 사진이 없습니다.", 404
 
     try:
@@ -185,13 +155,12 @@ def download_all():
                 file_path = os.path.join(PHOTO_FOLDER, file)
                 zipf.write(file_path, os.path.basename(file))  # ZIP에 추가
 
-        print(f"ZIP 파일 생성 완료: {zip_path}")
+        print(f"📦 ZIP 파일 생성 완료: {zip_path}")
     except Exception as e:
-        print(f"ZIP 파일 생성 오류: {e}")
+        print(f"❌ ZIP 파일 생성 오류: {e}")
         return "ZIP 파일 생성 실패", 500
 
     return send_file(zip_path, as_attachment=True)
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

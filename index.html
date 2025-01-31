@@ -21,11 +21,7 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            margin-bottom: 20px;
-            color: #333333;
-        }
-        form {
-            margin-bottom: 20px;
+            color: #333;
         }
         button {
             background-color: #4CAF50;
@@ -40,70 +36,43 @@
         button:hover {
             background-color: #45a049;
         }
-        input[type="number"] {
-            width: 50%;
-            padding: 10px;
-            margin: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+        .status {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #555;
         }
         img {
             max-width: 100%;
             margin-top: 20px;
         }
-        #temperature-display, #led-status, #heater-status {
-            font-size: 18px;
-            margin: 10px 0;
-            color: #555555;
-        }
     </style>
     <script>
-        function updateStatus() {
-    fetch('/temperature')
-    .then(response => response.json())
-    .then(data => {
-        console.log("Received data:", data);  // 응답 데이터 로그 출력
-        if (data.error) {
-            console.error("온도 데이터를 읽을 수 없습니다: ", data.error);
-            document.getElementById("current-temperature").innerText = "--";
-            document.getElementById("led-status").innerText = "LED 상태: --";
-            document.getElementById("heater-status").innerText = "히터 상태: --";
-        } else {
-            document.getElementById("current-temperature").innerText = Math.round(data.temperature) + "°C";
-            document.getElementById("led-status").innerText = "LED 상태: " + data.led;
-            document.getElementById("heater-status").innerText = "히터 상태: " + data.heater;
+        function updateTemperature() {
+            fetch('/temperature')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("temperature-display").innerText = data.temperature + "°C";
+            })
+            .catch(error => console.error("온도 업데이트 오류:", error));
         }
-    })
-    .catch(error => console.error("상태 업데이트 오류:", error));
-}
 
-        function sendPostRequest(url, data) {
+        function sendCommand(url, data) {
             fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
-            }).then(response => {
-                if (!response.ok) throw new Error("네트워크 오류");
-                return response.json();
-            }).then(result => {
-                console.log("응답:", result);
-                updateStatus();
-            }).catch(error => console.error("POST 요청 오류:", error));
+            })
+            .then(response => response.json())
+            .then(result => console.log("응답:", result))
+            .catch(error => console.error("POST 요청 오류:", error));
         }
 
-        function setTemperature(event) {
-            event.preventDefault();
-            let temp = document.getElementById("temperature").value;
-            sendPostRequest("/set_temp", { temperature: temp });
+        function controlLED(state) {
+            sendCommand("/led", { action: state });
         }
 
-        function controlHeater(action) {
-            sendPostRequest("/heater", { action: action.toLowerCase() });
-        }
-
-        function controlLED(action) {
-            sendPostRequest("/led", { action: action.toLowerCase() });
+        function controlHeater(state) {
+            sendCommand("/heater", { action: state });
         }
 
         function capturePhoto() {
@@ -131,9 +100,6 @@
             }).catch(error => console.error("최신 사진 불러오기 오류:", error));
         }
 
-        // 페이지 로드 시 최신 사진 자동 요청
-        window.onload = getLatestPhoto;
-
         function downloadPhoto() {
             window.location.href = "/download_current";
         }
@@ -142,30 +108,23 @@
             window.location.href = "/download_all";
         }
 
-        // 5초마다 상태 업데이트 .3
-        setInterval(updateStatus, 5000); 
-        
+        // 2초마다 온도 상태 업데이트
+        setInterval(updateTemperature, 2000);
+        // 페이지 로드 시 최신 사진 요청
+        window.onload = getLatestPhoto;
     </script>
 </head>
-<body onload="updateStatus()">
+<body>
     <div class="container">
         <h1>온도 제어 시스템</h1>
 
-        <div id="temperature-display">현재 온도: <span id="current-temperature">--</span></div>
-        <div id="led-status">LED 상태: --</div>
-        <div id="heater-status">히터 상태: --</div>
+        <div class="status">현재 온도: <span id="temperature-display">--</span></div>
 
-        <form onsubmit="setTemperature(event)">
-            <label for="temperature">설정 온도:</label>
-            <input type="number" id="temperature" step="1" placeholder="예: 60">
-            <button type="submit">온도 설정</button>
-        </form>
+        <button onclick="controlLED('on')">LED ON</button>
+        <button onclick="controlLED('off')">LED OFF</button>
 
-        <button onclick="controlHeater('ON')">히터 ON</button>
-        <button onclick="controlHeater('OFF')">히터 OFF</button>
-
-        <button onclick="controlLED('ON')">LED ON</button>
-        <button onclick="controlLED('OFF')">LED OFF</button>
+        <button onclick="controlHeater('on')">히터 ON</button>
+        <button onclick="controlHeater('off')">히터 OFF</button>
 
         <button onclick="capturePhoto()">📷 사진 촬영</button>
 

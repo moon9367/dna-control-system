@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
-const int LED_PIN = 8;         // LED 제어 핀
-const int HEATER_PIN = 9;      // PTC 히터 제어 핀
+const int LED_PIN = 9;         // LED 제어 핀
+const int HEATER_PIN = 10;      // PTC 히터 제어 핀
 const int TEMP_SENSOR_PIN = A0;  // 온도 센서 핀
 const float TARGET_TEMPERATURE = 60.0; // 목표 온도 60°C
 

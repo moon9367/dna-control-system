@@ -20,37 +20,42 @@ void loop() {
         String command = Serial.readStringUntil('\n');
         command.trim();  // 개행 문자 제거
 
+        Serial.print("🛠️ Received command: ");
+        Serial.println(command);  // 명령 입력 확인
+
         // 🔥 LED 제어
         if (command == "a") {
             digitalWrite(LED_PIN, HIGH);  // LED ON
-            Serial.println("LED ON");
+            Serial.println("✅ LED ON");
         }
         else if (command == "b") {
             digitalWrite(LED_PIN, LOW);   // LED OFF
-            Serial.println("LED OFF");
+            Serial.println("✅ LED OFF");
         }
 
         // 🔥 히터 ON
         else if (command == "c") {
             heaterActive = true;  // 히터 활성화
-            Serial.println("Heater ON (Target: 60°C)");
+            Serial.println("✅ Heater ON (Target: 60°C)");
         }
 
         // 🔥 히터 OFF
         else if (command == "d") {
             heaterActive = false;  // 히터 비활성화
             digitalWrite(HEATER_PIN, LOW);
-            Serial.println("Heater OFF");
+            Serial.println("✅ Heater OFF");
         }
     }
 
-    // 🌡️ 현재 온도 읽기
-    //float currentTemperature = readTemperature();
+    // 🌡️ 현재 온도 읽기 (변수 선언)
+    float currentTemperature = readTemperature();
 
-    // 📡 온도 출력 (디버깅용)
-    //Serial.print("Temperature: ");
-    //Serial.println(currentTemperature);
-    
+    // ✅ 특정 조건에서만 온도를 출력하도록 변경
+    if (heaterActive) {  // 히터가 켜져 있을 때만 출력
+        Serial.print("🌡️ Temperature: ");
+        Serial.print(currentTemperature);
+        Serial.println(" °C");
+    }
 
     // 🌡️ 히터 자동 제어
     if (heaterActive) {
@@ -60,6 +65,8 @@ void loop() {
             digitalWrite(HEATER_PIN, HIGH);  // 목표 온도 도달 후에도 유지
         }
     }
+
+    delay(2000); // 2초마다 실행
 }
 
 // 📡 온도 센서 값 읽기 함수

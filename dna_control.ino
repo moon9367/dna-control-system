@@ -11,7 +11,7 @@ void setup() {
     Serial.begin(9600);  // 시리얼 통신 시작
     pinMode(ledPin, OUTPUT);
     pinMode(heaterPin, OUTPUT);
-    digitalWrite(ledPin, LOW);
+    digitalWrite(ledPin, HIGH); // 테스트 HIGH 상태 추후 변경경
     digitalWrite(heaterPin, LOW);
 }
 

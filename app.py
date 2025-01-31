@@ -82,9 +82,19 @@ def led_control():
     """LED ON/OFF 제어"""
     data = request.get_json()
     action = data["action"].lower()
-    command = led_on if action == "on" else led_off
-    ser.write(f"{command}\n".encode())
+    command = "a" if action == "on" else "b"
+
+    print(f"✅ LED 요청 받음: {action}")  # 요청 확인
+    print(f"➡️ 아두이노로 전송: {command}")  # 아두이노로 보낼 값 확인
+
+    if ser:
+        ser.write(f"{command}\n".encode())  # 아두이노로 명령 전송
+        ser.flush()  # 시리얼 버퍼 초기화
+    else:
+        print("⚠️ 시리얼 포트 연결 안됨!")
+
     return jsonify({"message": f"LED {action} 명령 전송 완료"})
+
 
 @app.route("/heater", methods=["POST"])
 def heater_control():

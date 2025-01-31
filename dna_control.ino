@@ -16,9 +16,10 @@ void setup() {
 }
 
 void loop() {
+    // 🔥 시리얼 데이터 수신 처리
     if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        command.trim();  // 개행 문자 제거
+        String command = Serial.readStringUntil('\n');  // 개행 문자까지 읽기
+        command.trim();  // 앞뒤 공백 제거
 
         // 🔥 LED 제어
         if (command == "a") {

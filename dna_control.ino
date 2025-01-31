@@ -45,11 +45,12 @@ void loop() {
     }
 
     // 🌡️ 현재 온도 읽기
-    float currentTemperature = readTemperature();
+    //float currentTemperature = readTemperature();
 
     // 📡 온도 출력 (디버깅용)
-    Serial.print("Temperature: ");
-    Serial.println(currentTemperature);
+    //Serial.print("Temperature: ");
+    //Serial.println(currentTemperature);
+    
 
     // 🌡️ 히터 자동 제어
     if (heaterActive) {

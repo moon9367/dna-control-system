@@ -101,34 +101,36 @@ def send_command_to_arduino(command):
     if ser:
         with serial_lock:
             stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 명령어 전송 전 대기 (충돌 방지)
+            time.sleep(0.5)         # 충돌 방지 대기 시간
 
             for attempt in range(retry_count):
-                print(f"➡️ 아두이노로 명령어 전송 (시도 {attempt + 1}): {command.strip()}")
+                print(f"➡️ 명령어 전송 (시도 {attempt + 1}): {command.strip()}")
 
                 try:
                     ser.reset_input_buffer()  # 버퍼 초기화
-                    ser.write(command.encode())
+                    ser.write((command + "\n").encode())
                     ser.flush()
-                    time.sleep(1)             # 응답 대기 시간 증가 (1초)
+                    print("📡 명령어 전송 완료, 응답 대기 중...")
 
-                    # 응답 읽기
-                    while ser.in_waiting > 0:
+                    time.sleep(1)  # 아두이노 응답 대기 시간 증가
+
+                    if ser.in_waiting > 0:
                         response = ser.readline().decode().strip()
-                        print(f"✅ 아두이노 응답: {response}")
-                        if response:  # 응답이 있으면 종료
-                            break
+                        print(f"✅ 아두이노 응답 수신: {response}")
+                    else:
+                        print("⚠️ 버퍼에 수신된 데이터 없음")
 
                     if response != "No response from Arduino":
                         break  # 유효한 응답 수신 시 반복 종료
 
                 except Exception as e:
                     print(f"❌ 명령어 전송 오류: {e}")
-                    reset_serial_connection()  # 오류 발생 시 포트 재연결
+                    reset_serial_connection()  # 포트 재연결 시도
 
             stop_temp_thread.clear()  # 온도 읽기 재개
 
     return response
+
 
 
 @app.route("/led", methods=["POST"])

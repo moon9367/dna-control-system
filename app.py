@@ -60,31 +60,32 @@ def reset_serial_connection():
     except Exception as e:
         print(f"❌ 시리얼 포트 재연결 실패: {e}")
 
-def read_temperature():
-    global current_temperature
-    while not terminate_temp_thread.is_set():  # 종료 요청 전까지 반복
-        if ser and not stop_temp_thread.is_set():  # 일시 중지 시 스킵
-            try:
-                with serial_lock:
-                    ser.write("g\n".encode())
-                    ser.flush()
-                    time.sleep(0.2)  # 응답 대기 시간 추가
+# 온도 읽기 기능 비활성화
+# def read_temperature():
+#     global current_temperature
+#     while not terminate_temp_thread.is_set():  # 종료 요청 전까지 반복
+#         if ser and not stop_temp_thread.is_set():  # 일시 중지 시 스킵
+#             try:
+#                 with serial_lock:
+#                     ser.write("g\n".encode())
+#                     ser.flush()
+#                     time.sleep(0.2)  # 응답 대기 시간 추가
 
-                    temp = ser.readline().decode().strip()
-                    if temp.startswith("Temperature"):
-                        current_temperature = temp.split(":")[1].strip()
-                        print(f"📡 현재 온도: {current_temperature}°C")
-                    else:
-                        print(f"⚠️ 예상치 못한 응답: {temp}")
-            except Exception as e:
-                print(f"❌ 온도 읽기 오류: {e}")
-                reset_serial_connection()  # 오류 발생 시 포트 재연결
-                current_temperature = "0"
-        time.sleep(3)  # 읽기 간격 증가
+#                     temp = ser.readline().decode().strip()
+#                     if temp.startswith("Temperature"):
+#                         current_temperature = temp.split(":")[1].strip()
+#                         print(f"📡 현재 온도: {current_temperature}°C")
+#                     else:
+#                         print(f"⚠️ 예상치 못한 응답: {temp}")
+#             except Exception as e:
+#                 print(f"❌ 온도 읽기 오류: {e}")
+#                 reset_serial_connection()  # 오류 발생 시 포트 재연결
+#                 current_temperature = "0"
+#         time.sleep(3)  # 읽기 간격 증가
 
-# 🔥 온도 모니터링 스레드 시작
-temp_thread = threading.Thread(target=read_temperature, daemon=True)
-temp_thread.start()
+# 🔥 온도 모니터링 스레드 비활성화
+# temp_thread = threading.Thread(target=read_temperature, daemon=True)
+# temp_thread.start()
 
 @app.route("/")
 def index():

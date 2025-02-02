@@ -92,29 +92,34 @@ def get_temperature():
 
 def send_command_to_arduino(command):
     response = "No response from Arduino"
+    retry_count = 3  # 최대 3회 재시도
+
     if ser:
         with serial_lock:
             stop_temp_thread.set()  # 온도 읽기 일시 중지
             ser.reset_input_buffer()
 
-            print(f"➡️ 아두이노로 명령어 전송: {command.strip()}")  # 명령어 전송 로그
+            for attempt in range(retry_count):
+                print(f"➡️ 아두이노로 명령어 전송 (시도 {attempt + 1}): {command.strip()}")
 
-            try:
-                ser.write(command.encode())
-                ser.flush()
-                time.sleep(0.2)  # 명령어 처리 대기 시간 추가
+                try:
+                    ser.write(command.encode())
+                    ser.flush()
+                    time.sleep(0.3)  # 명령어 처리 대기 시간 추가
 
-                if ser.in_waiting > 0:
-                    response = ser.readline().decode().strip()
-                else:
-                    print("⚠️ 아두이노 응답 없음 (버퍼 비어 있음)")
-            except Exception as e:
-                print(f"❌ 명령어 전송 오류: {e}")
-                reset_serial_connection()  # 오류 발생 시 포트 재연결
+                    if ser.in_waiting > 0:
+                        response = ser.readline().decode().strip()
+                        print(f"✅ 아두이노 응답: {response}")
+                        break  # 응답을 받으면 반복 종료
+                    else:
+                        print("⚠️ 아두이노 응답 없음 (버퍼 비어 있음)")
+
+                except Exception as e:
+                    print(f"❌ 명령어 전송 오류: {e}")
+                    reset_serial_connection()  # 오류 발생 시 포트 재연결
 
             stop_temp_thread.clear()  # 온도 읽기 재개
 
-    print(f"➡️ 아두이노 응답: {response if response else 'No response'}")
     return response
 
 @app.route("/led", methods=["POST"])

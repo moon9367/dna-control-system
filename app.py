@@ -26,6 +26,7 @@ if not os.path.exists(PHOTO_FOLDER):
 
 # 시리얼 락 설정
 serial_lock = threading.Lock()
+stop_temp_thread = threading.Event()  # 온도 읽기 일시 중지 플래그
 
 # 아두이노 시리얼 포트 자동 감지
 def find_serial_port():
@@ -48,14 +49,14 @@ current_temperature = "0"
 def read_temperature():
     global current_temperature
     while True:
-        if ser:
+        if ser and not stop_temp_thread.is_set():  # 일시 중지 시 스킵
             try:
                 with serial_lock:
                     ser.write("g\n".encode())
                     ser.flush()
                     temp = ser.readline().decode().strip()
-                    if temp:
-                        current_temperature = temp
+                    if temp.startswith("Temperature"):
+                        current_temperature = temp.split(":")[1].strip()
                         print(f"📡 현재 온도: {current_temperature}°C")
             except Exception as e:
                 print(f"❌ 온도 읽기 오류: {e}")
@@ -73,6 +74,21 @@ def index():
 def get_temperature():
     return jsonify({"temperature": current_temperature})
 
+def send_command_to_arduino(command):
+    response = "No response from Arduino"
+    if ser:
+        with serial_lock:
+            stop_temp_thread.set()  # 온도 읽기 일시 중지
+            ser.reset_input_buffer()
+            ser.write(command.encode())
+            ser.flush()
+            time.sleep(0.1)
+            response = ser.readline().decode().strip()
+            stop_temp_thread.clear()  # 온도 읽기 재개
+
+    print(f"➡️ 아두이노 응답: {response if response else 'No response'}")
+    return response
+
 @app.route("/led", methods=["POST"])
 def led_control():
     data = request.get_json()
@@ -80,20 +96,7 @@ def led_control():
     command = "a\n" if action == "on" else "b\n"
 
     print(f"✅ LED 요청 받음: {action}")
-
-    if ser:
-        with serial_lock:
-            ser.reset_input_buffer()  # 입력 버퍼 초기화
-            ser.write(command.encode())
-            ser.flush()
-            time.sleep(0.1)  # 아두이노 응답 대기 시간
-            response = ser.readline().decode().strip()
-            if not response:
-                response = "No response from Arduino"
-            print(f"➡️ 아두이노 응답: {response}")
-    else:
-        print("⚠️ 시리얼 포트 연결 안됨!")
-
+    response = send_command_to_arduino(command)
     return jsonify({"message": f"LED {action} 명령 전송 완료", "response": response})
 
 @app.route("/heater", methods=["POST"])
@@ -103,20 +106,7 @@ def heater_control():
     command = "c\n" if action == "on" else "d\n"
 
     print(f"✅ 히터 요청 받음: {action}")
-
-    if ser:
-        with serial_lock:
-            ser.reset_input_buffer()  # 입력 버퍼 초기화
-            ser.write(command.encode())
-            ser.flush()
-            time.sleep(0.1)  # 아두이노 응답 대기 시간
-            response = ser.readline().decode().strip()
-            if not response:
-                response = "No response from Arduino"
-            print(f"➡️ 아두이노 응답: {response}")
-    else:
-        print("⚠️ 시리얼 포트 연결 안됨!")
-
+    response = send_command_to_arduino(command)
     return jsonify({"message": f"Heater {action} 명령 전송 완료", "response": response})
 
 @app.route("/capture", methods=["POST"])

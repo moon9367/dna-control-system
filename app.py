@@ -33,7 +33,7 @@ def find_serial_port():
     possible_ports = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/ttyACM1"]
     for port in possible_ports:
         try:
-            ser = serial.Serial(port, 57600, timeout=1)
+            ser = serial.Serial(port, 9600, timeout=1)
             print(f"✅ Arduino 연결 성공: {port}")
             return ser
         except serial.SerialException:
@@ -62,25 +62,28 @@ def reset_serial_connection():
 
 def read_temperature():
     global current_temperature
-    while not terminate_temp_thread.is_set():  # 종료 요청 전까지 반복
-        if ser and not stop_temp_thread.is_set():  # 일시 중지 시 스킵
+    while True:
+        if ser:
             try:
-                with serial_lock:
-                    ser.write("g\n".encode())
-                    ser.flush()
-                    time.sleep(0.2)  # 응답 대기 시간 추가
+                ser.reset_input_buffer()  # 버퍼 초기화
+                ser.write("GET_TEMP\n".encode())
+                time.sleep(0.5)
 
-                    temp = ser.readline().decode().strip()
-                    if temp.startswith("Temperature"):
-                        current_temperature = temp.split(":")[1].strip()
+                raw_data = ser.readline()
+                try:
+                    temp_data = raw_data.decode('utf-8').strip()
+                    if temp_data.startswith("Temperature:"):
+                        current_temperature = temp_data.split(":")[1].strip()
                         print(f"📡 현재 온도: {current_temperature}°C")
-                    else:
-                        print(f"⚠️ 예상치 못한 응답: {temp}")
+                except UnicodeDecodeError:
+                    print(f"⚠️ 잘못된 데이터 수신: {raw_data}")  # 디코딩 실패 시 원본 데이터 표시
+
             except Exception as e:
                 print(f"❌ 온도 읽기 오류: {e}")
-                reset_serial_connection()  # 오류 발생 시 포트 재연결
-                current_temperature = "0"
-        time.sleep(3)  # 읽기 간격 증가
+                reset_serial_connection()  # 포트 재연결 시도
+
+        time.sleep(2)
+
 
 # 🔥 온도 모니터링 스레드 시작
 temp_thread = threading.Thread(target=read_temperature, daemon=True)

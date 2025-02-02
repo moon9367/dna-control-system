@@ -8,7 +8,7 @@ const int ledPin = 10;         // 파워 LED 제어 핀 (MOSFET)
 bool heaterActive = false;  // 히터 동작 여부 저장
 
 void setup() {
-    Serial.begin(57600);  // 시리얼 통신 시작
+    Serial.begin(9600);  // 시리얼 통신 시작
     pinMode(ledPin, OUTPUT);
     pinMode(heaterPin, OUTPUT);
     digitalWrite(ledPin, HIGH); // 테스트 HIGH 상태 추후 변경경
@@ -16,27 +16,44 @@ void setup() {
 }
 
 void loop() {
+    void loop() {
     if (Serial.available()) {
-        char command = Serial.read();
-        
-        if (command == 'a') {
+        String command = Serial.readStringUntil('\n');
+        command.trim();
+
+        Serial.print("📥 명령어 수신: ");
+        Serial.println(command);  // 디버깅 메시지
+
+        if (command == "LED_ON") {
             digitalWrite(ledPin, HIGH);
-            Serial.println("LED ON OK");  // 명령어 수신 후 응답
-        }
-        else if (command == 'b') {
+            Serial.println("✅ LED turned ON");
+        } 
+        else if (command == "LED_OFF") {
             digitalWrite(ledPin, LOW);
-            Serial.println("LED OFF OK");  // 명령어 수신 후 응답
+            Serial.println("✅ LED turned OFF");
         }
-        else if (command == 'c') {
+        else if (command == "HEATER_ON") {
             digitalWrite(heaterPin, HIGH);
-            Serial.println("HEATER ON OK");  // 명령어 수신 후 응답
-        }
-        else if (command == 'd') {
+            Serial.println("✅ Heater turned ON");
+        } 
+        else if (command == "HEATER_OFF") {
             digitalWrite(heaterPin, LOW);
-            Serial.println("HEATER OFF OK");  // 명령어 수신 후 응답
+            Serial.println("✅ Heater turned OFF");
+        }
+        else if (command == "GET_TEMP") {
+            float temperature = readTemperature();
+            Serial.print("Temperature:");
+            Serial.println(temperature);
+        }
+        else {
+            Serial.println("❓ Unknown command");
         }
     }
+
+    delay(100);
+    }
 }
+
 
 
   // 🌡️ 현재 온도 읽기

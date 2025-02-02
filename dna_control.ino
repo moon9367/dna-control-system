@@ -16,29 +16,25 @@ void setup() {
 }
 
 void loop() {
-    void loop() {
     if (Serial.available()) {
         String command = Serial.readStringUntil('\n');
         command.trim();
 
-        Serial.print("📥 명령어 수신: ");
-        Serial.println(command);  // 디버깅 메시지
-
         if (command == "LED_ON") {
             digitalWrite(ledPin, HIGH);
-            Serial.println("✅ LED turned ON");
+            Serial.println("LED_ON_OK");  // 응답 추가
         } 
         else if (command == "LED_OFF") {
             digitalWrite(ledPin, LOW);
-            Serial.println("✅ LED turned OFF");
+            Serial.println("LED_OFF_OK");  // 응답 추가
         }
         else if (command == "HEATER_ON") {
             digitalWrite(heaterPin, HIGH);
-            Serial.println("✅ Heater turned ON");
+            Serial.println("HEATER_ON_OK");  // 응답 추가
         } 
         else if (command == "HEATER_OFF") {
             digitalWrite(heaterPin, LOW);
-            Serial.println("✅ Heater turned OFF");
+            Serial.println("HEATER_OFF_OK");  // 응답 추가
         }
         else if (command == "GET_TEMP") {
             float temperature = readTemperature();
@@ -46,13 +42,11 @@ void loop() {
             Serial.println(temperature);
         }
         else {
-            Serial.println("❓ Unknown command");
+            Serial.println("UNKNOWN_COMMAND");
         }
     }
-
-    delay(100);
-    }
 }
+
 
 
 

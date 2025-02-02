@@ -85,6 +85,29 @@ def read_temperature():
         time.sleep(2)
 
 
+def send_command(command):
+    if ser:
+        try:
+            ser.reset_input_buffer()  # 버퍼 초기화
+            ser.write(f"{command}\n".encode())
+            print(f"➡️ 명령어 전송: {command}")
+            
+            time.sleep(0.3)  # 아두이노의 처리 시간 대기
+            response = ser.readline().decode('utf-8', errors='ignore').strip()
+
+            if response:
+                print(f"✅ 아두이노 응답: {response}")
+                return response
+            else:
+                print("⚠️ 버퍼에 수신된 데이터 없음")
+                return None
+
+        except Exception as e:
+            print(f"❌ 명령어 전송 오류: {e}")
+            return None
+
+
+
 # 🔥 온도 모니터링 스레드 시작
 temp_thread = threading.Thread(target=read_temperature, daemon=True)
 temp_thread.start()

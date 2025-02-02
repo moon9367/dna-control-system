@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 // 핀 정의
-const int tempSensorPin = A0;  // 서미스터 핀
+//const int tempSensorPin = A0;  // 서미스터 핀
 const int heaterPin = 9;       // PTC 히터 제어 핀 (MOSFET)
 const int ledPin = 10;         // 파워 LED 제어 핀 (MOSFET)
 
@@ -16,35 +16,30 @@ void setup() {
 }
 
 void loop() {
-    // 📌 시리얼 데이터 수신 및 명령 처리
-    if (Serial.available() > 0) {
-        String command = Serial.readStringUntil('\n');  // 개행 문자까지 읽기
-        command.trim();  // 개행 문자 및 공백 제거
-
-        Serial.print("Received: ");
-        Serial.println(command);
-
-        if (command == "a") {
+    if (Serial.available()) {
+        char command = Serial.read();
+        
+        if (command == 'a') {
             digitalWrite(ledPin, HIGH);
-            Serial.println("LED ON");
-        } 
-        else if (command == "b") {
+            Serial.println("LED ON OK");  // 명령어 수신 후 응답
+        }
+        else if (command == 'b') {
             digitalWrite(ledPin, LOW);
-            Serial.println("LED OFF");
-        } 
-        else if (command == "c") {
-            heaterActive = true;
-            Serial.println("Heater ON");
-        } 
-        else if (command == "d") {
-            heaterActive = false;
+            Serial.println("LED OFF OK");  // 명령어 수신 후 응답
+        }
+        else if (command == 'c') {
+            digitalWrite(heaterPin, HIGH);
+            Serial.println("HEATER ON OK");  // 명령어 수신 후 응답
+        }
+        else if (command == 'd') {
             digitalWrite(heaterPin, LOW);
-            Serial.println("Heater OFF");
+            Serial.println("HEATER OFF OK");  // 명령어 수신 후 응답
         }
     }
 
+
   // 🌡️ 현재 온도 읽기
-    float currentTemperature = readTemperature();
+    //float currentTemperature = readTemperature();
 
     // 📡 온도 출력 (디버깅용)
     Serial.print("Temperature: ");

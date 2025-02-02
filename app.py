@@ -80,10 +80,18 @@ def send_command_to_arduino(command):
         with serial_lock:
             stop_temp_thread.set()  # 온도 읽기 일시 중지
             ser.reset_input_buffer()
+
+            print(f"➡️ 아두이노로 명령어 전송: {command.strip()}")  # 명령어 전송 로그
+
             ser.write(command.encode())
             ser.flush()
             time.sleep(0.1)
-            response = ser.readline().decode().strip()
+
+            if ser.in_waiting > 0:
+                response = ser.readline().decode().strip()
+            else:
+                print("⚠️ 아두이노 응답 없음 (버퍼 비어 있음)")
+
             stop_temp_thread.clear()  # 온도 읽기 재개
 
     print(f"➡️ 아두이노 응답: {response if response else 'No response'}")

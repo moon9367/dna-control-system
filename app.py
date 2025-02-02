@@ -46,6 +46,9 @@ ser = find_serial_port()
 # 📡 실시간 온도 저장 변수
 current_temperature = "0"
 
+# 온도 읽기 스레드 종료 플래그
+terminate_temp_thread = threading.Event()
+
 def reset_serial_connection():
     global ser
     try:
@@ -59,7 +62,7 @@ def reset_serial_connection():
 
 def read_temperature():
     global current_temperature
-    while True:
+    while not terminate_temp_thread.is_set():  # 종료 요청 전까지 반복
         if ser and not stop_temp_thread.is_set():  # 일시 중지 시 스킵
             try:
                 with serial_lock:
@@ -80,7 +83,8 @@ def read_temperature():
         time.sleep(3)  # 읽기 간격 증가
 
 # 🔥 온도 모니터링 스레드 시작
-threading.Thread(target=read_temperature, daemon=True).start()
+temp_thread = threading.Thread(target=read_temperature, daemon=True)
+temp_thread.start()
 
 @app.route("/")
 def index():
@@ -97,15 +101,15 @@ def send_command_to_arduino(command):
     if ser:
         with serial_lock:
             stop_temp_thread.set()  # 온도 읽기 일시 중지
-            ser.reset_input_buffer()
 
             for attempt in range(retry_count):
                 print(f"➡️ 아두이노로 명령어 전송 (시도 {attempt + 1}): {command.strip()}")
 
                 try:
+                    ser.reset_input_buffer()  # 버퍼 초기화
                     ser.write(command.encode())
                     ser.flush()
-                    time.sleep(0.3)  # 명령어 처리 대기 시간 추가
+                    time.sleep(0.5)  # 명령어 처리 대기 시간 추가
 
                     if ser.in_waiting > 0:
                         response = ser.readline().decode().strip()

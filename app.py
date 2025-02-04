@@ -51,14 +51,29 @@ terminate_temp_thread = threading.Event()
 
 def reset_serial_connection():
     global ser
-    try:
-        if ser:
-            ser.close()
-            time.sleep(1)
-        ser = find_serial_port()
-        print("🔄 시리얼 포트 재연결 시도")
-    except Exception as e:
-        print(f"❌ 시리얼 포트 재연결 실패: {e}")
+    max_retries = 3  # 최대 재시도 횟수
+
+    for attempt in range(max_retries):
+        try:
+            if ser:
+                ser.reset_input_buffer()  # 📡 버퍼 초기화
+                ser.reset_output_buffer()
+                ser.close()
+                print("🔌 기존 시리얼 포트 닫기 완료")
+                time.sleep(2)  # 포트 안정화 대기 시간 추가
+
+            ser = find_serial_port()  # 🔄 새로운 포트 찾기
+            if ser:
+                print(f"✅ 시리얼 포트 재연결 성공 (시도 {attempt + 1})")
+                return True  # 성공 시 종료
+
+        except Exception as e:
+            print(f"❌ 시리얼 포트 재연결 실패 (시도 {attempt + 1}): {e}")
+            time.sleep(2)  # 재시도 전 대기
+
+    print("⚠️ 모든 시리얼 포트 재연결 시도 실패")
+    return False
+
 
 def read_temperature():
     global current_temperature

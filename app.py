@@ -97,7 +97,7 @@ def read_temperature():
                 print(f"❌ 온도 읽기 오류: {e}")
                 reset_serial_connection()  # 포트 재연결 시도
 
-        time.sleep(2)
+        time.sleep(8)
 
 
 def send_command(command):
@@ -136,42 +136,28 @@ def get_temperature():
     return jsonify({"temperature": current_temperature})
 
 def send_command_to_arduino(command):
-    response = "No response from Arduino"
-    retry_count = 3
-
     if ser:
         with serial_lock:
-            stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 충돌 방지 대기 시간
+            try:
+                ser.reset_input_buffer()  # 버퍼 초기화
+                ser.write((command + "\n").encode())
+                ser.flush()
+                print("📡 명령어 전송 완료, 응답 대기 중...")
 
-            for attempt in range(retry_count):
-                print(f"➡️ 명령어 전송 (시도 {attempt + 1}): {command.strip()}")
+                time.sleep(1)  # 아두이노 응답 대기 시간 증가
 
-                try:
-                    ser.reset_input_buffer()  # 버퍼 초기화
-                    ser.write((command + "\n").encode())
-                    ser.flush()
-                    print("📡 명령어 전송 완료, 응답 대기 중...")
+                if ser.in_waiting > 0:
+                    response = ser.readline().decode().strip()
+                    print(f"✅ 아두이노 응답 수신: {response}")
+                    return response
+                else:
+                    print("⚠️ 버퍼에 수신된 데이터 없음")
+                    return "No response from Arduino"
 
-                    time.sleep(1)  # 아두이노 응답 대기 시간 증가
-
-                    if ser.in_waiting > 0:
-                        response = ser.readline().decode().strip()
-                        print(f"✅ 아두이노 응답 수신: {response}")
-                    else:
-                        print("⚠️ 버퍼에 수신된 데이터 없음")
-
-                    if response != "No response from Arduino":
-                        break  # 유효한 응답 수신 시 반복 종료
-
-                except Exception as e:
-                    print(f"❌ 명령어 전송 오류: {e}")
-                    reset_serial_connection()  # 포트 재연결 시도
-
-            stop_temp_thread.clear()  # 온도 읽기 재개
-
-    return response
-
+            except Exception as e:
+                print(f"❌ 명령어 전송 오류: {e}")
+                reset_serial_connection()  # 포트 재연결 시도
+                return "No response from Arduino"
 
 # LED히터 관련 코드
 

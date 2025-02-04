@@ -11,11 +11,14 @@ import zipfile
 app = Flask(__name__)
 picam2 = Picamera2()
 
-# 카메라 설정 (상하 반전 추가)
-config = picam2.create_still_configuration(main={"size": (1920, 1080)}, transform=libcamera.Transform(vflip=1))
+# ✅ 상하 반전 적용
+config = picam2.create_still_configuration(
+    main={"size": (1920, 1080)},
+    transform=Transform(vflip=1)  # 상하 반전 설정
+)
+
 picam2.configure(config)
 picam2.start()
-
 
 # 사진 저장 폴더
 PHOTO_FOLDER = "/home/aiseed/photos"

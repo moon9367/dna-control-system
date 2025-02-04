@@ -1,57 +1,78 @@
-// 핀 정의
-const int tempSensorPin = A0;   // 서미스터 핀
-const int heaterPin = 9;        // PTC 히터 제어 핀
-const int ledPin = 10;          // LED 제어 핀
-const int resistorValue = 100000; // 서미스터 직렬 저항
-const float beta = 3950;        // 서미스터 베타 계수
-const int refTemp = 25;         // 기준 온도
-const int refResistance = 100000; // 서미스터 기준 저항
+#include <Arduino.h>
 
-float targetTemperature = 60.0;
+// 핀 정의
+const int tempSensorPin = A0;  // 서미스터 핀
+const int heaterPin = 9;       // PTC 히터 제어 핀 (MOSFET)
+const int ledPin = 10;         // 파워 LED 제어 핀 (MOSFET)
+
+bool heaterActive = false;  // 히터 동작 여부 저장
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(heaterPin, OUTPUT);
-  pinMode(ledPin, OUTPUT);
+    Serial.begin(9600);  // 시리얼 통신 시작
+    pinMode(ledPin, OUTPUT);
+    pinMode(heaterPin, OUTPUT);
+    digitalWrite(ledPin, HIGH); // 테스트 HIGH 상태 추후 변경경
+    digitalWrite(heaterPin, LOW);
 }
 
 void loop() {
-  float temperature = readTemperature();
+    if (Serial.available()) {
+        String command = Serial.readStringUntil('\n');
+        command.trim();
 
-  // 현재 온도를 시리얼로 전송
-  Serial.print("Temperature:");
-  Serial.println(temperature);
-
-  // 라즈베리파이로부터 명령 수신
-  if (Serial.available()) {
-    String command = Serial.readString();
-    command.trim();
-    
-    if (command.startsWith("SET_TEMP:")) {
-      targetTemperature = command.substring(9).toFloat();
-      Serial.print("New target temperature: ");
-      Serial.println(targetTemperature);
-    } else if (command == "HEATER_ON") {
-      digitalWrite(heaterPin, HIGH);
-      Serial.println("Heater turned ON");
-    } else if (command == "HEATER_OFF") {
-      digitalWrite(heaterPin, LOW);
-      Serial.println("Heater turned OFF");
-    } else if (command == "LED_ON") {
-      digitalWrite(ledPin, HIGH);
-      Serial.println("LED turned ON");
-    } else if (command == "LED_OFF") {
-      digitalWrite(ledPin, LOW);
-      Serial.println("LED turned OFF");
+        if (command == "LED_ON") {
+            digitalWrite(ledPin, HIGH);
+            Serial.println("LED_ON_OK");  // 응답 추가
+        } 
+        else if (command == "LED_OFF") {
+            digitalWrite(ledPin, LOW);
+            Serial.println("LED_OFF_OK");  // 응답 추가
+        }
+        else if (command == "HEATER_ON") {
+            digitalWrite(heaterPin, HIGH);
+            Serial.println("HEATER_ON_OK");  // 응답 추가
+        } 
+        else if (command == "HEATER_OFF") {
+            digitalWrite(heaterPin, LOW);
+            Serial.println("HEATER_OFF_OK");  // 응답 추가
+        }
+        else if (command == "GET_TEMP") {
+            float temperature = readTemperature();
+            Serial.print("Temperature:");
+            Serial.println(temperature);
+        }
+        else {
+            Serial.println("UNKNOWN_COMMAND");
+        }
     }
-  }
-
-  delay(1000);
 }
 
+
+
+
+  // 🌡️ 현재 온도 읽기
+    float currentTemperature = readTemperature();
+
+    // 📡 온도 출력 (디버깅용)
+    Serial.print("Temperature: ");
+    Serial.println(currentTemperature);
+
+    // 🔥 히터 자동 제어
+    if (heaterActive) {
+        if (readTemperature() < 60.0) {
+            digitalWrite(heaterPin, HIGH);  // 목표 온도 미만이면 히터 ON
+        } else {
+            digitalWrite(heaterPin, HIGH);  // 목표 온도 도달 후에도 유지
+        }
+    }
+
+    delay(2000); // 2초마다 실행
+}
+
+// 📡 온도 센서 값 읽기 함수
 float readTemperature() {
-  int analogValue = analogRead(tempSensorPin);
-  float resistance = (1023.0 / analogValue - 1) * resistorValue;
-  float temperature = 1 / (log(resistance / refResistance) / beta + 1 / (refTemp + 273.15)) - 273.15;
-  return temperature;
+    int tempValue = analogRead(tempSensorPin);
+    float voltage = tempValue * 5.0 / 1023.0;
+    float temperature = (voltage - 0.5) * 100;
+    return temperature;
 }

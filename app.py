@@ -33,7 +33,7 @@ def find_serial_port():
     possible_ports = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/ttyACM1"]
     for port in possible_ports:
         try:
-            ser = serial.Serial(port, 9600, timeout=1)
+            ser = serial.Serial(port, 115200, timeout=1)
             print(f"✅ Arduino 연결 성공: {port}")
             return ser
         except serial.SerialException:

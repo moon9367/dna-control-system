@@ -8,7 +8,7 @@ const int ledPin = 10;         // 파워 LED 제어 핀 (MOSFET)
 bool heaterActive = false;  // 히터 동작 여부 저장
 
 void setup() {
-    Serial.begin(9600);  // 시리얼 통신 시작
+    Serial.begin(115200);  // 시리얼 통신 시작
     pinMode(ledPin, OUTPUT);
     pinMode(heaterPin, OUTPUT);
     digitalWrite(ledPin, LOW); // 테스트 HIGH 상태 추후 변경경

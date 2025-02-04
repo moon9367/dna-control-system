@@ -160,27 +160,35 @@ def send_command_to_arduino(command):
 
 # LED히터 관련 코드
 
-
-@app.route("/led", methods=["POST"])
-def led_control():
-    data = request.get_json()  # JSON 형식으로 데이터 수신
-    action = data["action"].lower()  # 'on' 또는 'off'
-    command = "LED_ON\n" if action == "on" else "LED_OFF\n"
-
-    print(f"✅ LED 요청 받음: {action}")
+@app.route("/led/on", methods=["POST"])
+def led_on():
+    command = "LED_ON\n"
+    print("✅ LED 켜기 요청 수신")
     response = send_command_to_arduino(command)
-    return jsonify({"message": f"LED {action} 명령 전송 완료", "response": response})
+    return jsonify({"message": "LED 켜기 완료", "response": response})
 
-
-@app.route("/heater", methods=["POST"])
-def heater_control():
-    data = request.get_json()  # JSON 형식으로 데이터 수신
-    action = data["action"].lower()  # 'on' 또는 'off'
-    command = "HEATER_ON\n" if action == "on" else "HEATER_OFF\n"
-
-    print(f"✅ 히터 요청 받음: {action}")
+@app.route("/led/off", methods=["POST"])
+def led_off():
+    command = "LED_OFF\n"
+    print("✅ LED 끄기 요청 수신")
     response = send_command_to_arduino(command)
-    return jsonify({"message": f"Heater {action} 명령 전송 완료", "response": response})
+    return jsonify({"message": "LED 끄기 완료", "response": response})
+
+
+@app.route("/heater/on", methods=["POST"])
+def heater_on():
+    command = "HEATER_ON\n"
+    print("✅ 히터 켜기 요청 수신")
+    response = send_command_to_arduino(command)
+    return jsonify({"message": "히터 켜기 완료", "response": response})
+
+@app.route("/heater/off", methods=["POST"])
+def heater_off():
+    command = "HEATER_OFF\n"
+    print("✅ 히터 끄기 요청 수신")
+    response = send_command_to_arduino(command)
+    return jsonify({"message": "히터 끄기 완료", "response": response})
+
 
 # LED히터 관련 코드 끝
 

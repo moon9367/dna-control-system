@@ -11,12 +11,9 @@ import zipfile
 app = Flask(__name__)
 picam2 = Picamera2()
 
-# 카메라 설정
-config = picam2.create_still_configuration(main={"size": (1920, 1080)})
+# 카메라 설정 (상하 반전 추가)
+config = picam2.create_still_configuration(main={"size": (1920, 1080)}, transform=libcamera.Transform(vflip=1))
 picam2.configure(config)
-# ✅ 상하 반전 (수직 반전)
-picam2.set_controls({"FlipV": 1})  # 1 = 상하 반전 활성화, 0 = 비활성화
-# 카메라 시작
 picam2.start()
 
 

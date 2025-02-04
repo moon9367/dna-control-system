@@ -1,22 +1,8 @@
-import os
 import serial
-from flask import Flask, render_template, request, send_file, jsonify
-from picamera2 import Picamera2
-from datetime import datetime
+from flask import Flask, render_template, request, jsonify
 
 # Flask 설정
 app = Flask(__name__)
-
-# 카메라 설정
-picam2 = Picamera2()
-config = picam2.create_still_configuration(main={"size": (1920, 1080)})
-picam2.configure(config)
-picam2.start()
-
-# 사진 저장 폴더
-PHOTO_FOLDER = "/home/pi/photos"
-if not os.path.exists(PHOTO_FOLDER):
-    os.makedirs(PHOTO_FOLDER)
 
 # 시리얼 포트 설정
 ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
@@ -54,18 +40,6 @@ def get_temperature():
         "led": led_status,
         "heater": heater_status,
     }
-
-@app.route("/capture", methods=["POST"])
-def capture_photo():
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
-    try:
-        picam2.capture_file(file_path)
-        print(f"📸 사진 촬영 완료: {file_path}")
-        return send_file(file_path, mimetype="image/jpeg")
-    except Exception as e:
-        print(f"❌ 사진 촬영 오류: {e}")
-        return jsonify({"error": "사진 촬영 실패"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

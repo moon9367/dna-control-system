@@ -107,7 +107,6 @@ def send_command(command):
             return None
 
 
-
 # 🔥 온도 모니터링 스레드 시작
 temp_thread = threading.Thread(target=read_temperature, daemon=True)
 temp_thread.start()
@@ -157,13 +156,11 @@ def send_command_to_arduino(command):
 
     return response
 
-
-
 @app.route("/led", methods=["POST"])
 def led_control():
     data = request.get_json()
     action = data["action"].lower()
-    command = "a\n" if action == "on" else "b\n"
+    command = "LED_ON" if action == "on" else "LED_OFF"
 
     print(f"✅ LED 요청 받음: {action}")
     response = send_command_to_arduino(command)
@@ -173,72 +170,11 @@ def led_control():
 def heater_control():
     data = request.get_json()
     action = data["action"].lower()
-    command = "c\n" if action == "on" else "d\n"
+    command = "HEATER_ON" if action == "on" else "HEATER_OFF"
 
     print(f"✅ 히터 요청 받음: {action}")
     response = send_command_to_arduino(command)
     return jsonify({"message": f"Heater {action} 명령 전송 완료", "response": response})
-
-@app.route("/capture", methods=["POST"])
-def capture_photo():
-    global latest_photo_path
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
-
-    try:
-        picam2.capture_file(latest_photo_path)
-        print(f"📸 사진 촬영 완료: {latest_photo_path}")
-
-    except Exception as e:
-        print(f"❌ 사진 촬영 오류: {e}")
-        return jsonify({"error": "사진 촬영 실패"}), 500
-
-    return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
-
-@app.route("/latest_photo", methods=["GET"])
-def get_latest_photo():
-    if latest_photo_path is None or not os.path.exists(latest_photo_path):
-        return jsonify({"error": "사진이 존재하지 않습니다."}), 404
-
-    return jsonify({"photo_name": os.path.basename(latest_photo_path)})
-
-@app.route("/photos/<filename>")
-def serve_photo(filename):
-    file_path = os.path.join(PHOTO_FOLDER, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path)
-    return "파일을 찾을 수 없습니다.", 404
-
-@app.route("/download_current", methods=["GET"])
-def download_current():
-    if latest_photo_path is None or not os.path.exists(latest_photo_path):
-        return "현재 다운로드할 사진이 없습니다.", 404
-
-    return send_file(latest_photo_path, as_attachment=True)
-
-@app.route("/download_all", methods=["GET"])
-def download_all():
-    zip_path = os.path.join(PHOTO_FOLDER, "photos.zip")
-
-    photo_files = [f for f in os.listdir(PHOTO_FOLDER) if f.endswith(".jpg")]
-
-    if not photo_files:
-        print("❌ 다운로드 실패: 폴더 내 사진 없음")
-        return "폴더에 저장된 사진이 없습니다.", 404
-
-    try:
-        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file in photo_files:
-                file_path = os.path.join(PHOTO_FOLDER, file)
-                zipf.write(file_path, os.path.basename(file))
-
-        print(f"📦 ZIP 파일 생성 완료: {zip_path}")
-    except Exception as e:
-        print(f"❌ ZIP 파일 생성 오류: {e}")
-        return "ZIP 파일 생성 실패", 500
-
-    return send_file(zip_path, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

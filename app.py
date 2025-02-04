@@ -74,6 +74,7 @@ def reset_serial_connection():
     print("⚠️ 모든 시리얼 포트 재연결 시도 실패")
     return False
 
+
 def read_temperature():
     global current_temperature
     while True:
@@ -96,70 +97,99 @@ def read_temperature():
                 print(f"❌ 온도 읽기 오류: {e}")
                 reset_serial_connection()  # 포트 재연결 시도
 
-        time.sleep(8)  # 📡 업데이트 간격을 8초로 유지
+        time.sleep(8)
+
+
+def send_command(command):
+    if ser:
+        try:
+            ser.reset_input_buffer()  # 버퍼 초기화
+            ser.write(f"{command}\n".encode())
+            print(f"➡️ 명령어 전송: {command}")
+            
+            time.sleep(0.3)  # 아두이노의 처리 시간 대기
+            response = ser.readline().decode('utf-8', errors='ignore').strip()
+
+            if response:
+                print(f"✅ 아두이노 응답: {response}")
+                return response
+            else:
+                print("⚠️ 버퍼에 수신된 데이터 없음")
+                return None
+
+        except Exception as e:
+            print(f"❌ 명령어 전송 오류: {e}")
+            return None
+
+
+
+# 🔥 온도 모니터링 스레드 시작
+temp_thread = threading.Thread(target=read_temperature, daemon=True)
+temp_thread.start()
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/temperature")
+def get_temperature():
+    return jsonify({"temperature": current_temperature})
 
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
-            print("⏸️ 온도 출력 대기")
-            stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 딜레이 추가
-
             try:
                 ser.reset_input_buffer()  # 버퍼 초기화
                 ser.write((command + "\n").encode())
                 ser.flush()
-                print(f"➡️ 명령어 전송: {command.strip()}")
+                print("📡 명령어 전송 완료, 응답 대기 중...")
 
-                time.sleep(1)  # 아두이노 응답 대기 시간
+                time.sleep(1)  # 아두이노 응답 대기 시간 증가
 
                 if ser.in_waiting > 0:
                     response = ser.readline().decode().strip()
                     print(f"✅ 아두이노 응답 수신: {response}")
+                    return response
                 else:
-                    response = "No response from Arduino"
                     print("⚠️ 버퍼에 수신된 데이터 없음")
+                    return "No response from Arduino"
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
-                reset_serial_connection()
-                response = "No response from Arduino"
-
-            time.sleep(0.5)  # 딜레이 추가
-            stop_temp_thread.clear()  # 온도 읽기 재개
-            print("▶️ 온도 출력 시작")
-
-            return response
+                reset_serial_connection()  # 포트 재연결 시도
+                return "No response from Arduino"
 
 # LED히터 관련 코드
 
 @app.route("/led/on", methods=["POST"])
 def led_on():
-    command = "LED_ON"
+    command = "LED_ON\n"
     print("✅ LED 켜기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "LED 켜기 완료", "response": response})
 
 @app.route("/led/off", methods=["POST"])
 def led_off():
-    command = "LED_OFF"
+    command = "LED_OFF\n"
     print("✅ LED 끄기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "LED 끄기 완료", "response": response})
 
+
 @app.route("/heater/on", methods=["POST"])
 def heater_on():
-    command = "HEATER_ON"
+    command = "HEATER_ON\n"
     print("✅ 히터 켜기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "히터 켜기 완료", "response": response})
 
 @app.route("/heater/off", methods=["POST"])
 def heater_off():
-    command = "HEATER_OFF"
+    command = "HEATER_OFF\n"
     print("✅ 히터 끄기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "히터 끄기 완료", "response": response})
+
 
 # LED히터 관련 코드 끝
 

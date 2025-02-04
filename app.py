@@ -138,26 +138,35 @@ def get_temperature():
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
+            print("⏸️ 온도 출력 대기")
+            stop_temp_thread.set()  # 온도 읽기 일시 중지
+            time.sleep(0.5)         # 딜레이 추가
+
             try:
                 ser.reset_input_buffer()  # 버퍼 초기화
                 ser.write((command + "\n").encode())
                 ser.flush()
-                print("📡 명령어 전송 완료, 응답 대기 중...")
+                print(f"➡️ 명령어 전송: {command.strip()}")
 
-                time.sleep(1)  # 아두이노 응답 대기 시간 증가
+                time.sleep(1)  # 아두이노 응답 대기 시간
 
                 if ser.in_waiting > 0:
                     response = ser.readline().decode().strip()
                     print(f"✅ 아두이노 응답 수신: {response}")
-                    return response
                 else:
+                    response = "No response from Arduino"
                     print("⚠️ 버퍼에 수신된 데이터 없음")
-                    return "No response from Arduino"
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
-                reset_serial_connection()  # 포트 재연결 시도
-                return "No response from Arduino"
+                reset_serial_connection()
+                response = "No response from Arduino"
+
+            time.sleep(0.5)  # 딜레이 추가
+            stop_temp_thread.clear()  # 온도 읽기 재개
+            print("▶️ 온도 출력 시작")
+
+            return response
 
 # LED히터 관련 코드
 

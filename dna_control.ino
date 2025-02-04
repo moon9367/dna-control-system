@@ -7,7 +7,7 @@ const int ledPin = 10;         // 파워 LED 제어 핀 (MOSFET)
 
 bool heaterActive = false;              // 히터 자동 제어 활성화 여부
 const float targetTemperature = 40.0;   // 목표 온도
-const float hysteresis = 2.0;           // 온도 유지 범위 (히스테리시스)
+const float hysteresis = 0.5;           // ✅ 히스테리시스 범위 축소
 
 void setup() {
     Serial.begin(9600);                 // 시리얼 통신 시작
@@ -59,13 +59,12 @@ void loop() {
         if (currentTemperature < targetTemperature - hysteresis) {
             digitalWrite(heaterPin, HIGH);   // ✅ 온도가 목표보다 충분히 낮으면 히터 ON
         } 
-        else if (currentTemperature > targetTemperature + hysteresis) {
-            digitalWrite(heaterPin, LOW);    // ✅ 온도가 목표보다 충분히 높으면 히터 OFF
+        else if (currentTemperature >= targetTemperature) {
+            digitalWrite(heaterPin, LOW);    // ✅ 목표 온도 도달 시 즉시 히터 OFF
         }
-        // 히스테리시스 범위 내에서는 현재 상태 유지
     }
 
-    delay(2000); // 2초마다 온도 확인
+    delay(500); // ✅ 0.5초마다 온도 확인 (더 빠르게 반응)
 }
 
 // 📡 온도 센서 값 읽기 함수

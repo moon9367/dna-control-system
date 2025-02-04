@@ -14,7 +14,11 @@ picam2 = Picamera2()
 # 카메라 설정
 config = picam2.create_still_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
+# ✅ 상하 반전 (수직 반전)
+picam2.set_controls({"FlipV": 1})  # 1 = 상하 반전 활성화, 0 = 비활성화
+# 카메라 시작
 picam2.start()
+
 
 # 사진 저장 폴더
 PHOTO_FOLDER = "/home/aiseed/photos"

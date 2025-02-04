@@ -56,23 +56,19 @@
             .catch(error => console.error("온도 업데이트 오류:", error));
         }
 
-        function sendCommand(url, data) {
-            fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
+        function sendCommand(url) {
+            fetch(url, { method: "POST" })
             .then(response => response.json())
-            .then(result => console.log("응답:", result))
-            .catch(error => console.error("POST 요청 오류:", error));
+            .then(result => console.log("✅ 응답:", result))
+            .catch(error => console.error("❌ 요청 오류:", error));
         }
 
         function controlLED(state) {
-            sendCommand("/led", { action: state });
+            sendCommand(`/led/${state}`);  // ✅ 수정된 URL (action 제거)
         }
 
         function controlHeater(state) {
-            sendCommand("/heater", { action: state });
+            sendCommand(`/heater/${state}`);  // ✅ 수정된 URL (action 제거)
         }
 
         function capturePhoto() {
@@ -82,12 +78,12 @@
                 if (data.photo_name) {
                     updatePhoto(data.photo_name);
                 }
-            }).catch(error => console.error("사진 촬영 오류:", error));
+            }).catch(error => console.error("📸 사진 촬영 오류:", error));
         }
 
         function updatePhoto(filename) {
             let timestamp = new Date().getTime();  // 캐시 방지
-            document.getElementById("photo").src = "/photos/" + filename + "?t=" + timestamp;
+            document.getElementById("photo").src = `/photos/${filename}?t=${timestamp}`;
         }
 
         function getLatestPhoto() {

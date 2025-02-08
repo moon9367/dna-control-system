@@ -14,8 +14,8 @@ const int refResistance = 100000; // 기준 저항 값 (100K)
 // PID 제어 관련 상수
 const float targetTemperature = 40.0; // 목표 온도 (°C)
 const float Kp = 1.5;                 // 비례 상수 (조정)
-const float Ki = 0.3;                 // 적분 상수 (조정)
-const float Kd = 0.5;                 // 미분 상수 (조정)
+const float Ki = 0.2;                 // 적분 상수 (조정)
+const float Kd = 0.7;                 // 미분 상수 (조정)
 
 // 안전 제어 상수
 const float maxTemperature = targetTemperature + 10.0; // 최대 허용 온도 (목표 온도 + 10°C)

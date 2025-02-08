@@ -4,7 +4,7 @@ import threading
 import time
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
-from picamera2 import Picamera2
+from picamera2 import Picamera2, Preview
 import zipfile
 
 # Flask 설정
@@ -13,8 +13,11 @@ picam2 = Picamera2()
 
 config = picam2.create_still_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
-picam2.rotation = 180
+picam2.rotation = 180  # ++ 상하 반전 유지
 picam2.start()
+
+# ++ 카메라 자동 초점 활성화
+picam2.set_controls({"AfMode": 2})  # 2는 연속 자동 초점 모드
 
 # 사진 저장 폴더
 PHOTO_FOLDER = "/home/aiseed/photos"
@@ -49,36 +52,10 @@ current_temperature = "0"
 # 온도 읽기 스레드 종료 플래그
 terminate_temp_thread = threading.Event()
 
-def reset_serial_connection():
-    global ser
-    max_retries = 3  # 최대 재시도 횟수
-
-    for attempt in range(max_retries):
-        try:
-            if ser:
-                ser.reset_input_buffer()  # 📡 버퍼 초기화
-                ser.reset_output_buffer()
-                ser.close()
-                print("🔌 기존 시리얼 포트 닫기 완료")
-                time.sleep(2)  # 포트 안정화 대기 시간 추가
-
-            ser = find_serial_port()  # 🔄 새로운 포트 찾기
-            if ser:
-                print(f"✅ 시리얼 포트 재연결 성공 (시도 {attempt + 1})")
-                return True  # 성공 시 종료
-
-        except Exception as e:
-            print(f"❌ 시리얼 포트 재연결 실패 (시도 {attempt + 1}): {e}")
-            time.sleep(2)  # 재시도 전 대기
-
-    print("⚠️ 모든 시리얼 포트 재연결 시도 실패")
-    return False
-
-
 def read_temperature():
     global current_temperature
-    while True:
-        if ser:
+    while not terminate_temp_thread.is_set():
+        if ser and not stop_temp_thread.is_set():
             try:
                 ser.reset_input_buffer()  # 버퍼 초기화
                 ser.write("GET_TEMP\n".encode())
@@ -95,10 +72,8 @@ def read_temperature():
 
             except Exception as e:
                 print(f"❌ 온도 읽기 오류: {e}")
-                reset_serial_connection()  # 포트 재연결 시도
 
         time.sleep(8)
-
 
 def send_command(command):
     if ser:
@@ -120,7 +95,6 @@ def send_command(command):
         except Exception as e:
             print(f"❌ 명령어 전송 오류: {e}")
             return None
-
 
 
 # 🔥 온도 모니터링 스레드 시작
@@ -168,40 +142,33 @@ def send_command_to_arduino(command):
 
             return response
 
-# LED히터 관련 코드
-
 @app.route("/led/on", methods=["POST"])
 def led_on():
-    command = "LED_ON\n"
+    command = "LED_ON"
     print("✅ LED 켜기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "LED 켜기 완료", "response": response})
 
 @app.route("/led/off", methods=["POST"])
 def led_off():
-    command = "LED_OFF\n"
+    command = "LED_OFF"
     print("✅ LED 끄기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "LED 끄기 완료", "response": response})
 
-
 @app.route("/heater/on", methods=["POST"])
 def heater_on():
-    command = "HEATER_ON\n"
+    command = "HEATER_ON"
     print("✅ 히터 켜기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "히터 켜기 완료", "response": response})
 
 @app.route("/heater/off", methods=["POST"])
 def heater_off():
-    command = "HEATER_OFF\n"
+    command = "HEATER_OFF"
     print("✅ 히터 끄기 요청 수신")
     response = send_command_to_arduino(command)
     return jsonify({"message": "히터 끄기 완료", "response": response})
-
-
-# LED히터 관련 코드 끝
-
 
 @app.route("/capture", methods=["POST"])
 def capture_photo():
@@ -211,6 +178,8 @@ def capture_photo():
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
     try:
+        picam2.set_controls({"AfTrigger": 1})  # ++ 사진 촬영 전 초점 재조정
+        time.sleep(1)  # ++ 초점 조정 대기 시간
         picam2.capture_file(latest_photo_path)
         print(f"📸 사진 촬영 완료: {latest_photo_path}")
 

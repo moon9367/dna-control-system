@@ -1,4 +1,4 @@
-// Arduino 코드 - 히터 제어 및 명령 처리 유지
+// Arduino 코드 - HEATER_ON 동작 시 온도 유지
 
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀
@@ -14,13 +14,6 @@ const int refResistance = 100000; // 기준 저항 값 (100K)
 // 목표 온도 설정
 const float targetTemperature = 40.0; // 목표 온도 (°C)
 const float hysteresis = 2.0;         // 히스테리시스 값 (°C)
-
-// 상태 변수
-bool heaterOn = false;
-
-// 명령 처리 변수
-String command = "";
-bool commandReceived = false;
 
 float readTemperature() {
   int analogValue = analogRead(tempSensorPin);
@@ -42,35 +35,37 @@ void setup() {
 }
 
 void loop() {
-  // 명령 수신 처리
+  float temperature = readTemperature();
+
+  // HEATER_ON 동작 시 온도 유지
   if (Serial.available() > 0) {
-    command = Serial.readStringUntil('\n');
+    String command = Serial.readStringUntil('\n');
     command.trim();
-    commandReceived = true;
-    handleCommand(command);
-  }
 
-  // 명령이 없으면 온도 제어 수행
-  if (!commandReceived) {
-    float temperature = readTemperature();
-
-    // 히스테리시스 기반 온도 제어
-    if (heaterOn) { // 히터가 활성화된 상태에서만 동작
+    if (command == "HEATER_ON") {
       if (temperature >= targetTemperature) {
         digitalWrite(heaterPin, LOW); // 히터 끄기
+        Serial.println("Heater OFF: 목표 온도 도달");
       } else if (temperature <= targetTemperature - hysteresis) {
         digitalWrite(heaterPin, HIGH); // 히터 켜기
+        Serial.println("Heater ON: 온도를 올리는 중...");
       }
+    } else if (command == "HEATER_OFF") {
+      digitalWrite(heaterPin, LOW); // 히터 강제 끄기
+      Serial.println("HEATER_OFF_OK");
+    } else {
+      Serial.println("UNKNOWN_COMMAND");
     }
-
-    // 현재 상태 출력
-    Serial.print("Current Temperature: ");
-    Serial.print(temperature);
-    Serial.println(" °C");
   }
+
+  // 현재 상태 출력
+  Serial.print("Current Temperature: ");
+  Serial.print(temperature);
+  Serial.println(" °C");
 
   delay(1000); // 1초마다 실행
 }
+
 
 void handleCommand(String cmd) {
   if (cmd == "LED_ON") {

@@ -46,19 +46,20 @@ void loop() {
 
     if (command == "HEATER_ON") {
       // 온도 제어 시작
-      if (temperature >= targetTemperature) {
+      if (temperature >= 40.0) {
         digitalWrite(heaterPin, LOW); // 히터 끄기
         Serial.println("Heater OFF: 목표 온도 초과");
-      } else if (temperature <= targetTemperature - hysteresis) {
+      } else if (temperature <= 40.0 - hysteresis) {
         digitalWrite(heaterPin, HIGH); // 히터 켜기
         Serial.println("Heater ON: 온도를 올리는 중...");
       }
     } else if (command == "HEATER_OFF") {
-      // 히터 강제 OFF
       digitalWrite(heaterPin, LOW);
       Serial.println("HEATER_OFF_OK");
     } else if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH);
+      delay(5000);
+      digitalWrite(ledPin, LOW);
       Serial.println("LED_ON_OK");
     } else if (command == "LED_OFF") {
       digitalWrite(ledPin, LOW);
@@ -73,5 +74,5 @@ void loop() {
   Serial.print(temperature);
   Serial.println(" °C");
 
-  delay(1000); // 1초 간격으로 실행
+  delay(3000); // 1초 간격으로 실행
 }

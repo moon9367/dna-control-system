@@ -1,4 +1,4 @@
-// Arduino 코드 - 단순 온도 제어 (명령 처리 분리)
+// Arduino 코드 - 히터 제어 및 명령 처리 유지
 
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀
@@ -35,10 +35,10 @@ void setup() {
   pinMode(heaterPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
 
-  digitalWrite(heaterPin, LOW);
-  digitalWrite(ledPin, LOW);
+  digitalWrite(heaterPin, LOW); // 히터 초기 상태: 꺼짐
+  digitalWrite(ledPin, LOW);   // LED 초기 상태: 꺼짐
 
-  Serial.println("Arduino 단순 온도 제어 초기화 완료");
+  Serial.println("Arduino 초기화 완료");
 }
 
 void loop() {
@@ -55,17 +55,11 @@ void loop() {
     float temperature = readTemperature();
 
     // 히스테리시스 기반 온도 제어
-    if (temperature < targetTemperature - hysteresis) {
-      if (!heaterOn) {
-        digitalWrite(heaterPin, HIGH);
-        heaterOn = true;
-        Serial.println("Heater ON: 온도를 올리는 중...");
-      }
-    } else if (temperature > targetTemperature) {
-      if (heaterOn) {
-        digitalWrite(heaterPin, LOW);
-        heaterOn = false;
-        Serial.println("Heater OFF: 목표 온도 도달");
+    if (heaterOn) { // 히터가 활성화된 상태에서만 동작
+      if (temperature >= targetTemperature) {
+        digitalWrite(heaterPin, LOW); // 히터 끄기
+      } else if (temperature <= targetTemperature - hysteresis) {
+        digitalWrite(heaterPin, HIGH); // 히터 켜기
       }
     }
 
@@ -75,7 +69,7 @@ void loop() {
     Serial.println(" °C");
   }
 
-  delay(1000); // 1초 주기로 제어 수행
+  delay(1000); // 1초마다 실행
 }
 
 void handleCommand(String cmd) {

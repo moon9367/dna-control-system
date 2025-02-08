@@ -1,4 +1,4 @@
-// Arduino 코드 - 단순 온도 제어 (히스테리시스 방식)
+// Arduino 코드 - 단순 온도 제어 (명령 처리 분리)
 
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀

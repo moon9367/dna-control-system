@@ -73,7 +73,7 @@ def read_temperature():
             except Exception as e:
                 print(f"❌ 온도 읽기 오류: {e}")
 
-        time.sleep(8)
+        time.sleep(2)
 
 def send_command(command):
     if ser:

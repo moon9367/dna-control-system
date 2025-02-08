@@ -1,4 +1,4 @@
-// Arduino 코드 - PID 제어 및 강제 OFF 조건 강화
+// Arduino 코드 - 단순 온도 제어 (히스테리시스 방식)
 
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀
@@ -11,19 +11,12 @@ const float beta = 3950;          // 서미스터 베타 계수
 const int refTemp = 25;           // 기준 온도 (섭씨)
 const int refResistance = 100000; // 기준 저항 값 (100K)
 
-// PID 제어 관련 상수
+// 목표 온도 설정
 const float targetTemperature = 40.0; // 목표 온도 (°C)
-const float Kp = 1.5;                 // 비례 상수 (조정)
-const float Ki = 0.2;                 // 적분 상수 (조정)
-const float Kd = 0.7;                 // 미분 상수 (조정)
+const float hysteresis = 2.0;         // 히스테리시스 값 (°C)
 
-// 안전 제어 상수
-const float maxTemperature = targetTemperature + 10.0; // 최대 허용 온도 (목표 온도 + 10°C)
-
-// PID 제어 변수
-float integral = 0;
-float lastError = 0;
-unsigned long lastTime = 0;
+// 상태 변수
+bool heaterOn = false;
 
 // 명령 처리 변수
 String command = "";
@@ -45,8 +38,7 @@ void setup() {
   digitalWrite(heaterPin, LOW);
   digitalWrite(ledPin, LOW);
 
-  Serial.println("Arduino PID 제어 초기화 완료");
-  lastTime = millis();
+  Serial.println("Arduino 단순 온도 제어 초기화 완료");
 }
 
 void loop() {
@@ -58,45 +50,29 @@ void loop() {
     handleCommand(command);
   }
 
-  // 명령이 없으면 PID 제어 수행
+  // 명령이 없으면 온도 제어 수행
   if (!commandReceived) {
     float temperature = readTemperature();
 
-    // 강제 히터 OFF 조건
-    if (temperature > maxTemperature) {
-      digitalWrite(heaterPin, LOW);
-      Serial.println("Heater FORCED OFF: 초과 온도 감지");
-      delay(1000); // 강제 OFF 후 1초 대기
-      return;
+    // 히스테리시스 기반 온도 제어
+    if (temperature < targetTemperature - hysteresis) {
+      if (!heaterOn) {
+        digitalWrite(heaterPin, HIGH);
+        heaterOn = true;
+        Serial.println("Heater ON: 온도를 올리는 중...");
+      }
+    } else if (temperature > targetTemperature) {
+      if (heaterOn) {
+        digitalWrite(heaterPin, LOW);
+        heaterOn = false;
+        Serial.println("Heater OFF: 목표 온도 도달");
+      }
     }
-
-    unsigned long currentTime = millis();
-    float elapsedTime = (currentTime - lastTime) / 1000.0; // 초 단위 시간 계산
-    lastTime = currentTime;
-
-    // PID 제어 계산
-    float error = targetTemperature - temperature;
-    integral += error * elapsedTime;
-    float derivative = (error - lastError) / elapsedTime;
-    float output = Kp * error + Ki * integral + Kd * derivative;
-
-    // 히터 제어
-    if (output > 0) {
-      analogWrite(heaterPin, constrain(output, 0, 255)); // 히터 출력 제한
-      Serial.println("Heater ON: PID 제어");
-    } else {
-      digitalWrite(heaterPin, LOW);
-      Serial.println("Heater OFF: 목표 온도 도달");
-    }
-
-    lastError = error;
 
     // 현재 상태 출력
     Serial.print("Current Temperature: ");
     Serial.print(temperature);
     Serial.println(" °C");
-    Serial.print("PID Output: ");
-    Serial.println(output);
   }
 
   delay(1000); // 1초 주기로 제어 수행
@@ -111,9 +87,11 @@ void handleCommand(String cmd) {
     Serial.println("LED_OFF_OK");
   } else if (cmd == "HEATER_ON") {
     digitalWrite(heaterPin, HIGH);
+    heaterOn = true;
     Serial.println("HEATER_ON_OK");
   } else if (cmd == "HEATER_OFF") {
     digitalWrite(heaterPin, LOW);
+    heaterOn = false;
     Serial.println("HEATER_OFF_OK");
   } else {
     Serial.println("UNKNOWN_COMMAND");

@@ -83,19 +83,26 @@ def send_command(command):
             print(f"➡️ 명령어 전송: {command}")
             
             time.sleep(0.3)  # 아두이노의 처리 시간 대기
-            response = ser.readline().decode('utf-8', errors='ignore').strip()
+            
+            # 응답 읽기 및 필터링
+            response = None
+            for _ in range(5):  # 최대 5번 재시도
+                raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
+                if raw_data and not raw_data.startswith("Temperature"):
+                    response = raw_data
+                    break
+                time.sleep(0.1)  # 짧은 대기 후 재시도
 
             if response:
                 print(f"✅ 아두이노 응답: {response}")
                 return response
             else:
-                print("⚠️ 버퍼에 수신된 데이터 없음")
+                print("⚠️ 버퍼에 유효한 데이터 없음")
                 return None
 
         except Exception as e:
             print(f"❌ 명령어 전송 오류: {e}")
             return None
-
 
 # 🔥 온도 모니터링 스레드 시작
 temp_thread = threading.Thread(target=read_temperature, daemon=True)
@@ -122,18 +129,25 @@ def send_command_to_arduino(command):
                 ser.flush()
                 print(f"➡️ 명령어 전송: {command.strip()}")
 
-                time.sleep(1)  # 아두이노 응답 대기 시간
+                time.sleep(1.5)  # ++ 아두이노 응답 대기 시간 연장
 
-                if ser.in_waiting > 0:
-                    response = ser.readline().decode().strip()
+                # 응답 필터링 (온도 데이터 제외)
+                response = None
+                for _ in range(5):
+                    raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
+                    if raw_data and not raw_data.startswith("Temperature"):
+                        response = raw_data
+                        break
+                    time.sleep(0.1)
+
+                if response:
                     print(f"✅ 아두이노 응답 수신: {response}")
                 else:
                     response = "No response from Arduino"
-                    print("⚠️ 버퍼에 수신된 데이터 없음")
+                    print("⚠️ 버퍼에 유효한 데이터 없음")
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
-                reset_serial_connection()
                 response = "No response from Arduino"
 
             time.sleep(0.5)  # 딜레이 추가

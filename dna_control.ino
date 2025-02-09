@@ -1,87 +1,76 @@
 #include <Arduino.h>
 
 // 핀 정의
-const int tempSensorPin = A0;  // 서미스터 핀
-const int heaterPin = 9;       // 히터 제어 핀
-const int ledPin = 10;         // LED 제어 핀
+const int tempSensorPin = A0; // 온도 센서 핀
+const int heaterPin = 9;      // 히터 제어 핀
+const int ledPin = 10;        // LED 제어 핀
 
-// 목표 온도와 히스테리시스
-const float targetTemperature = 40.0; // 목표 온도
-const float hysteresis = 2.0;         // 히스테리시스 값 (온도 차)
+// 온도 계산에 필요한 상수
+const float SERIES_RESISTOR = 10000.0;  // 시리즈 저항 값 (10kΩ)
+const float NOMINAL_RESISTANCE = 10000.0; // 서미스터의 공칭 저항 (25°C에서 10kΩ)
+const float NOMINAL_TEMPERATURE = 25.0;  // 공칭 온도 (25°C)
+const float BETA_COEFFICIENT = 3950.0;   // 서미스터의 베타 계수
 
-// 상태 플래그
-bool isHeaterOn = false;
+// 목표 온도 설정
+float targetTemperature = 40.0;  // "HEATER_ON" 명령 시 유지할 온도
+const float TEMPERATURE_THRESHOLD = 2.0; // 허용 오차 (±2°C)
 
-// 온도 읽기 함수
-float readTemperature() {
-  int analogValue = analogRead(tempSensorPin);
-  float resistance = (1023.0 / analogValue - 1) * 100000; // 저항값 계산 (100K 기준)
-  float temperature = 1 / (log(resistance / 100000) / 3950 + 1 / (25 + 273.15)) - 273.15;
-  return temperature;
-}
+// 변수
+float temperature = 0.0; // 계산된 온도 값
+bool heaterOn = false;   // 히터 상태
 
 void setup() {
-  Serial.begin(9600);
+  // 핀 모드 설정
+  pinMode(tempSensorPin, INPUT);
   pinMode(heaterPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
 
-  digitalWrite(heaterPin, LOW); // 초기 상태: 히터 OFF
-  digitalWrite(ledPin, LOW);    // 초기 상태: LED OFF
-
-  Serial.println("Arduino 초기화 완료");
+  // 시리얼 통신 시작
+  Serial.begin(9600);
 }
 
 void loop() {
-  // 명령 처리
-  handleSerialCommands();
+  // 명령어 수신 확인
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n'); // 명령어 읽기 (줄바꿈 기준)
+    command.trim(); // 공백 제거
 
-  // 온도 전송 (히터가 꺼져 있을 때만)
-  if (!isHeaterOn) {
-    float temperature = readTemperature();
-    Serial.print("Temperature:");
-    Serial.println(temperature);
-    delay(2000); // 2초마다 데이터 전송
-  }
-}
-
-void handleSerialCommands() {
-  if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    command.trim();
-
+    // 명령어 처리
     if (command == "HEATER_ON") {
-      Serial.println("HEATER_ON 명령 실행");
-      isHeaterOn = true; // 히터 상태 플래그 활성화
-      digitalWrite(heaterPin, HIGH);
-
-      // 목표 온도 유지
-      while (true) {
-        float temperature = readTemperature();
-        Serial.print("Temperature:");
-        Serial.println(temperature);
-
-        if (temperature >= targetTemperature) {
-          digitalWrite(heaterPin, LOW);
-          Serial.println("히터 OFF: 목표 온도 도달");
-          break;
-        }
-
-        delay(1000); // 1초마다 온도 확인
-      }
-
-      isHeaterOn = false; // 히터 상태 플래그 비활성화
+      heaterOn = true;
     } else if (command == "HEATER_OFF") {
-      digitalWrite(heaterPin, LOW);
-      Serial.println("HEATER_OFF 명령 실행");
-      isHeaterOn = false;
+      heaterOn = false;
+      digitalWrite(heaterPin, LOW); // 히터 끄기
     } else if (command == "LED_ON") {
-      digitalWrite(ledPin, HIGH);
-      Serial.println("LED_ON 명령 실행");
+      digitalWrite(ledPin, HIGH); // LED 켜기
     } else if (command == "LED_OFF") {
-      digitalWrite(ledPin, LOW);
-      Serial.println("LED_OFF 명령 실행");
-    } else {
-      Serial.println("알 수 없는 명령입니다.");
+      digitalWrite(ledPin, LOW);  // LED 끄기
     }
   }
+
+  // 온도 센서 값 읽기
+  int analogValue = analogRead(tempSensorPin);
+
+  // 서미스터 저항 계산
+  float resistance = SERIES_RESISTOR / ((1023.0 / analogValue) - 1.0);
+
+  // 온도 계산 (Steinhart-Hart 방정식)
+  temperature = 1.0 / (log(resistance / NOMINAL_RESISTANCE) / BETA_COEFFICIENT + (1.0 / (NOMINAL_TEMPERATURE + 273.15)));
+  temperature -= 273.15; // 켈빈에서 섭씨로 변환
+
+  // 히터 제어 (목표 온도 유지)
+  if (heaterOn) {
+    if (temperature < targetTemperature - TEMPERATURE_THRESHOLD) {
+      digitalWrite(heaterPin, HIGH); // 히터 켜기
+    } else if (temperature > targetTemperature + TEMPERATURE_THRESHOLD) {
+      digitalWrite(heaterPin, LOW); // 히터 끄기
+    }
+  }
+
+  // 온도 데이터 전송
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+
+  // 1초 대기
+  delay(1000);
 }

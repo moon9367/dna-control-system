@@ -51,23 +51,20 @@ ser = find_serial_port()
 # 📡 실시간 온도 저장 변수
 current_temperature = "0"
 
-# 온도 읽기 스레드 종료 플래그
 def read_temperature():
     global current_temperature
-    while not stop_temp_thread.is_set():
+    while True:  # 온도 읽기 스레드는 중단 없이 실행
         if ser:
             try:
                 with serial_lock:
-                    ser.reset_input_buffer()
                     raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
-                    print(f"Raw Data: {raw_data}")  # 디버깅용 로그 출력
-
                     if raw_data.startswith("Temperature:"):
                         current_temperature = float(raw_data.split(":")[1].strip())
                         print(f"📡 현재 온도: {current_temperature}°C")
             except Exception as e:
                 print(f"온도 읽기 오류: {e}")
-        time.sleep(2)
+        time.sleep(2)  # 2초 간격으로 온도 데이터 읽기
+
 
 
 
@@ -115,33 +112,20 @@ def get_temperature():
 
 def send_command_to_arduino(command):
     if ser:
-        with serial_lock:
-            stop_temp_thread.set()  # 온도 읽기 중단
-            time.sleep(0.5)
-
-            try:
-                ser.reset_input_buffer()
-                ser.write((command + "\n").encode())
+        try:
+            with serial_lock:
+                ser.reset_input_buffer()  # 버퍼 초기화
+                ser.write((command + "\n").encode())  # 명령어 전송
                 print(f"➡️ 명령어 전송: {command}")
 
-                for _ in range(20):  # 최대 20회 데이터 확인
-                    raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
-                    print(f"🔄 수신 데이터: {raw_data}")
-
-                    if raw_data.startswith("Temperature:"):
-                        global current_temperature
-                        current_temperature = float(raw_data.split(":")[1].strip())
-                        print(f"📡 현재 온도: {current_temperature}°C")
-                    elif command in raw_data:
-                        print(f"✅ 명령 응답 수신: {raw_data}")
-                        break
-            except Exception as e:
-                print(f"❌ 명령 처리 오류: {e}")
-            finally:
-                stop_temp_thread.clear()  # 온도 읽기 재개
-                print("▶️ 온도 읽기 재개")
-
-            return response
+                # Arduino 응답 확인
+                response = ser.readline().decode('utf-8', errors='ignore').strip()
+                if response:
+                    print(f"✅ 아두이노 응답: {response}")
+                return response
+        except Exception as e:
+            print(f"❌ 명령 처리 오류: {e}")
+            return None
 
 
 

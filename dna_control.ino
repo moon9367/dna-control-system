@@ -33,13 +33,13 @@ void setup() {
 }
 
 void loop() {
-  // 온도 읽기
-  if (enableTemperatureReading) {
-    float temperature = readTemperature();
-    Serial.print("현재 온도: ");
-    Serial.println(temperature);
-    delay(1000); // 온도 읽기 주기
-  }
+  float temperature = readTemperature();
+  Serial.print("Temperature:");
+  Serial.println(temperature);
+
+  delay(2000);  // 2초마다 데이터 전송
+}
+
 
   // 명령 처리
   handleSerialCommands();

@@ -58,20 +58,17 @@ def read_temperature():
         if ser:
             try:
                 with serial_lock:
-                    ser.reset_input_buffer()  # 시리얼 버퍼 초기화
-
-                    # 아두이노가 주기적으로 온도 데이터를 보낸다고 가정
+                    ser.reset_input_buffer()
                     raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
+                    print(f"Raw Data: {raw_data}")  # 디버깅용 로그 출력
 
-                    # "Temperature:"로 시작하는 데이터 확인 및 처리
                     if raw_data.startswith("Temperature:"):
                         current_temperature = float(raw_data.split(":")[1].strip())
                         print(f"📡 현재 온도: {current_temperature}°C")
             except Exception as e:
                 print(f"온도 읽기 오류: {e}")
-
-        # 2초 대기 (온도 읽기 주기 설정)
         time.sleep(2)
+
 
 
 

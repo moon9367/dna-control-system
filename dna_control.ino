@@ -47,22 +47,28 @@ void loop() {
 
 void handleSerialCommands() {
   if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n'); // 시리얼에서 명령 읽기
-    command.trim(); // 명령 문자열의 공백 제거
-
-    // 온도 읽기 일시 중단
-    enableTemperatureReading = false;
+    String command = Serial.readStringUntil('\n');
+    command.trim();
 
     if (command == "HEATER_ON") {
       Serial.println("HEATER_ON 명령 실행");
-      // 히터 제어 로직: 40도 유지
-      float temperature = readTemperature();
-      if (temperature >= targetTemperature) {
-        digitalWrite(heaterPin, LOW); // 목표 온도 도달 시 히터 끄기
-        Serial.println("히터 OFF: 목표 온도 도달");
-      } else if (temperature <= targetTemperature - hysteresis) {
-        digitalWrite(heaterPin, HIGH); // 온도가 낮아지면 히터 켜기
-        Serial.println("히터 ON: 온도가 목표치 이하");
+      digitalWrite(heaterPin, HIGH); // 히터 켜기
+
+      // 목표 온도에 도달하거나 명령이 끊길 때까지 온도 데이터 전송
+      while (true) {
+        float temperature = readTemperature();
+        Serial.print("Temperature:");
+        Serial.println(temperature);
+
+        // 목표 온도 도달 시 히터를 끔
+        if (temperature >= targetTemperature) {
+          digitalWrite(heaterPin, LOW);
+          Serial.println("히터 OFF: 목표 온도 도달");
+          break;
+        }
+
+        // 데이터 전송 간격
+        delay(1000);
       }
     } else if (command == "HEATER_OFF") {
       digitalWrite(heaterPin, LOW); // 히터 끄기
@@ -76,8 +82,6 @@ void handleSerialCommands() {
     } else {
       Serial.println("알 수 없는 명령입니다.");
     }
-
-    // 명령 처리 완료 후 온도 읽기 재개
-    enableTemperatureReading = true;
   }
 }
+

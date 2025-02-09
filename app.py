@@ -4,17 +4,17 @@ import threading
 import time
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
-from picamera2 import Picamera2, Preview
+from picamera2 import Picamera2, libcamera  # libcamera 가져오기
 import zipfile
 
 # Flask 설정
 app = Flask(__name__)
 picam2 = Picamera2()
 
-# 카메라 설정에서 flip 사용
+# 카메라 설정
 config = picam2.create_still_configuration(
     main={"size": (1920, 1080), "format": "RGB888"},
-    transform=libcamera.Transform(hflip=0, vflip=1)  # 상하 반전
+    transform=libcamera.Transform(hflip=0, vflip=1)  # 상하 반전 설정
 )
 picam2.configure(config)
 picam2.start()

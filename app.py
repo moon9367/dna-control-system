@@ -11,13 +11,15 @@ import zipfile
 app = Flask(__name__)
 picam2 = Picamera2()
 
+# 카메라 설정
 config = picam2.create_still_configuration(main={"size": (1920, 1080)})
 picam2.configure(config)
-picam2.rotation = 180  # ++ 상하 반전 유지
+picam2.rotation = 180  # 상하 반전
 picam2.start()
 
-# ++ 카메라 자동 초점 활성화
-picam2.set_controls({"AfMode": 2})  # 2는 연속 자동 초점 모드
+# 카메라 초점 모드 설정
+picam2.set_controls({"AfMode": 2})  # 연속 자동 초점 모드
+
 
 # 사진 저장 폴더
 PHOTO_FOLDER = "/home/aiseed/photos"
@@ -54,26 +56,22 @@ terminate_temp_thread = threading.Event()
 
 def read_temperature():
     global current_temperature
-    while not terminate_temp_thread.is_set():
-        if ser and not stop_temp_thread.is_set():
+    while not stop_temp_thread.is_set():
+        if ser:
             try:
-                ser.reset_input_buffer()  # 버퍼 초기화
-                ser.write("GET_TEMP\n".encode())
-                time.sleep(0.5)
+                with serial_lock:
+                    ser.reset_input_buffer()
+                    ser.write(b"GET_TEMP\n")
+                    time.sleep(0.5)
 
-                raw_data = ser.readline()
-                try:
-                    temp_data = raw_data.decode('utf-8').strip()
-                    if temp_data.startswith("Temperature:"):
-                        current_temperature = temp_data.split(":")[1].strip()
+                    raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
+                    if raw_data.startswith("Temperature:"):
+                        current_temperature = float(raw_data.split(":")[1].strip())
                         print(f"📡 현재 온도: {current_temperature}°C")
-                except UnicodeDecodeError:
-                    print(f"⚠️ 잘못된 데이터 수신: {raw_data}")  # 디코딩 실패 시 원본 데이터 표시
-
             except Exception as e:
-                print(f"❌ 온도 읽기 오류: {e}")
-
+                print(f"온도 읽기 오류: {e}")
         time.sleep(2)
+
 
 def send_command(command):
     if ser:
@@ -112,34 +110,24 @@ temp_thread.start()
 def index():
     return render_template("index.html")
 
-@app.route('/temperature')
+@app.route("/temperature")
 def get_temperature():
-    try:
-        ser.flushInput()  # 시리얼 버퍼 초기화
-        ser.write(b"TEMP_REQUEST\n")  # 아두이노에 온도 요청 (필요 시 아두이노 코드 수정)
-        temperature = ser.readline().decode('utf-8').strip()  # 응답 읽기
-        if temperature.startswith("Temperature:"):
-            value = float(temperature.split(":")[1].strip())
-            return jsonify({"temperature": value})
-        else:
-            return jsonify({"error": "Invalid response from Arduino"})
-    except Exception as e:
-        return jsonify({"error": str(e)})
+    return jsonify({"temperature": current_temperature})
 
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
-            print("⏸️ 온도 읽기 중지")
-            stop_temp_thread.set()  # 온도 읽기 스레드 일시 중지
-            time.sleep(0.5)
+            print("⏸️ 온도 출력 대기")
+            stop_temp_thread.set()  # 온도 읽기 일시 중지
+            time.sleep(0.5)         # 딜레이 추가
 
             try:
                 ser.reset_input_buffer()  # 버퍼 초기화
-                ser.write((command + "\n").encode())  # 명령 전송
+                ser.write((command + "\n").encode())
                 ser.flush()
                 print(f"➡️ 명령어 전송: {command.strip()}")
 
-                time.sleep(1.5)  # 아두이노 응답 대기
+                time.sleep(1.5)  # ++ 아두이노 응답 대기 시간 연장
 
                 # 응답 필터링 (온도 데이터 제외)
                 response = None
@@ -151,22 +139,20 @@ def send_command_to_arduino(command):
                     time.sleep(0.1)
 
                 if response:
-                    print(f"✅ 아두이노 응답: {response}")
+                    print(f"✅ 아두이노 응답 수신: {response}")
                 else:
-                    print("⚠️ 유효한 데이터 없음")
-                    response = "No response"
+                    response = "No response from Arduino"
+                    print("⚠️ 버퍼에 유효한 데이터 없음")
 
             except Exception as e:
-                print(f"❌ 명령 전송 오류: {e}")
-                response = "Error"
+                print(f"❌ 명령어 전송 오류: {e}")
+                response = "No response from Arduino"
 
-            finally:
-                time.sleep(0.5)
-                stop_temp_thread.clear()  # 온도 읽기 스레드 재개
-                print("▶️ 온도 읽기 재개")
+            time.sleep(0.5)  # 딜레이 추가
+            stop_temp_thread.clear()  # 온도 읽기 재개
+            print("▶️ 온도 출력 시작")
 
             return response
-
 
 @app.route("/led/on", methods=["POST"])
 def led_on():
@@ -196,24 +182,21 @@ def heater_off():
     response = send_command_to_arduino(command)
     return jsonify({"message": "히터 끄기 완료", "response": response})
 
-@app.route("/capture", methods=["POST"])
+@app.route('/capture', methods=['POST'])
 def capture_photo():
     global latest_photo_path
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     latest_photo_path = os.path.join(PHOTO_FOLDER, f"photo_{timestamp}.jpg")
 
     try:
-        picam2.set_controls({"AfTrigger": 1})  # ++ 사진 촬영 전 초점 재조정
-        time.sleep(1)  # ++ 초점 조정 대기 시간
+        picam2.set_controls({"AfTrigger": 1})  # 초점 조정
+        time.sleep(1)  # 초점 조정 대기
         picam2.capture_file(latest_photo_path)
         print(f"📸 사진 촬영 완료: {latest_photo_path}")
-
+        return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
     except Exception as e:
-        print(f"❌ 사진 촬영 오류: {e}")
+        print(f"사진 촬영 오류: {e}")
         return jsonify({"error": "사진 촬영 실패"}), 500
-
-    return jsonify({"message": "사진 촬영 완료", "photo_name": os.path.basename(latest_photo_path)})
 
 @app.route("/latest_photo", methods=["GET"])
 def get_latest_photo():
@@ -258,6 +241,15 @@ def download_all():
         return "ZIP 파일 생성 실패", 500
 
     return send_file(zip_path, as_attachment=True)
+
+@app.route('/delete_all_photos', methods=['POST'])
+def delete_all_photos():
+    for file in os.listdir(PHOTO_FOLDER):
+        file_path = os.path.join(PHOTO_FOLDER, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    return jsonify({"message": "모든 사진이 삭제되었습니다."})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

@@ -118,7 +118,7 @@ def send_command_to_arduino(command):
     if ser:
         with serial_lock:
             stop_temp_thread.set()  # 온도 읽기 중지
-            time.sleep(1)         # 명령어 전송 전 대기
+            time.sleep(0.5)         # 명령어 전송 전 대기
 
             try:
                 ser.reset_input_buffer()
@@ -126,27 +126,31 @@ def send_command_to_arduino(command):
                 print(f"➡️ 명령어 전송: {command.strip()}")
                 time.sleep(1.5)  # 아두이노 응답 대기
 
-                # 명령어 응답 읽기
+                # 명령어 응답 처리
                 response = None
                 for _ in range(5):
                     raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
-                    if raw_data and not raw_data.startswith("TEMP:"):  # 온도 데이터 제외
-                        response = raw_data
+                    if raw_data.startswith("CMD:"):  # 명령 응답
+                        response = raw_data.split(":")[1].strip()
                         break
-                        
+                    elif raw_data.startswith("TEMP:"):  # 온도 데이터는 업데이트
+                        current_temperature = float(raw_data.split(":")[1].strip())
+                        print(f"📡 현재 온도 (명령 중): {current_temperature}°C")
+
                 if response:
-                    print(f"✅ 아두이노 응답 수신: {response}")
+                    print(f"✅ 명령 응답 수신: {response}")
                 else:
                     print("⚠️ 유효한 명령 응답 없음")
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
+
             finally:
                 stop_temp_thread.clear()  # 온도 읽기 재개
                 print("▶️ 온도 읽기 재개")
 
-
             return response
+
 
 @app.route("/led/on", methods=["POST"])
 def led_on():

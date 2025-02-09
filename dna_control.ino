@@ -5,19 +5,29 @@ const int tempSensorPin = A0; // 온도 센서 핀
 const int heaterPin = 9;      // 히터 제어 핀
 const int ledPin = 10;        // LED 제어 핀
 
-// 온도 계산에 필요한 상수
-const float SERIES_RESISTOR = 100000.0;  // 시리즈 저항 값 (10kΩ)
-const float NOMINAL_RESISTANCE = 100000.0; // 서미스터의 공칭 저항 (25°C에서 10kΩ)
-const float NOMINAL_TEMPERATURE = 25.0;  // 공칭 온도 (25°C)
-const float BETA_COEFFICIENT = 3950.0;   // 서미스터의 베타 계수
+// 서미스터 관련 상수
+const int resistorValue = 100000; // 직렬 저항 값 (100K)
+const float beta = 3950;          // 서미스터 베타 계수
+const int refTemp = 25;           // 기준 온도 (섭씨)
+const int refResistance = 100000; // 기준 저항 값 (100K)
 
-// 목표 온도 설정
-float targetTemperature = 40.0;  // "HEATER_ON" 명령 시 유지할 온도
-const float TEMPERATURE_THRESHOLD = 2.0; // 허용 오차 (±2°C)
+// 목표 온도
+const float targetTemperature = 40.0;  // "HEATER_ON" 명령 시 유지할 온도
+const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 
-// 변수
-float temperature = 0.0; // 계산된 온도 값
-bool heaterOn = false;   // 히터 상태
+// 전역 변수
+float currentTemperature = 0.0; // 실시간 온도 저장
+bool heaterOn = false;          // 히터 상태
+
+// 온도 계산 함수
+float readTemperature() {
+  int analogValue = analogRead(tempSensorPin);
+  if (analogValue == 0) return -273.15; // 아날로그 값이 0이면 에러 방지
+
+  float resistance = (1023.0 / analogValue - 1) * resistorValue; // 저항 계산
+  float temperature = 1 / (log(resistance / refResistance) / beta + 1 / (refTemp + 273.15)) - 273.15; // 온도 계산
+  return temperature;
+}
 
 void setup() {
   // 핀 모드 설정
@@ -48,28 +58,21 @@ void loop() {
     }
   }
 
-  // 온도 센서 값 읽기
-  int analogValue = analogRead(tempSensorPin);
-
-  // 서미스터 저항 계산
-  float resistance = SERIES_RESISTOR / ((1023.0 / analogValue) - 1.0);
-
-  // 온도 계산 (Steinhart-Hart 방정식)
-  temperature = 1.0 / (log(resistance / NOMINAL_RESISTANCE) / BETA_COEFFICIENT + (1.0 / (NOMINAL_TEMPERATURE + 273.15)));
-  temperature -= 273.15; // 켈빈에서 섭씨로 변환
+  // 온도 읽기
+  currentTemperature = readTemperature();
 
   // 히터 제어 (목표 온도 유지)
   if (heaterOn) {
-    if (temperature < targetTemperature - TEMPERATURE_THRESHOLD) {
+    if (currentTemperature < targetTemperature - temperatureThreshold) {
       digitalWrite(heaterPin, HIGH); // 히터 켜기
-    } else if (temperature > targetTemperature + TEMPERATURE_THRESHOLD) {
+    } else if (currentTemperature > targetTemperature + temperatureThreshold) {
       digitalWrite(heaterPin, LOW); // 히터 끄기
     }
   }
 
   // 온도 데이터 전송
   Serial.print("Temperature: ");
-  Serial.println(temperature);
+  Serial.println(currentTemperature);
 
   // 1초 대기
   delay(1000);

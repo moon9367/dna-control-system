@@ -46,6 +46,11 @@
             margin: 10px 0;
             color: #555;
         }
+        .device-status {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #444;
+        }
         img {
             max-width: 100%;
             margin-top: 20px;
@@ -61,19 +66,21 @@
             .catch(error => console.error("온도 업데이트 오류:", error));
         }
 
-        function sendCommand(url) {
+        function sendCommand(url, device, state) {
             fetch(url, { method: "POST" })
             .then(response => response.json())
-            .then(result => console.log("✅ 응답:", result))
-            .catch(error => console.error("❌ 요청 오류:", error));
+            .then(result => {
+                document.getElementById(`${device}-status`).innerText = `${device} 상태: ${state.toUpperCase()}`;
+            })
+            .catch(error => console.error(`${device} 상태 업데이트 오류:`, error));
         }
 
         function controlLED(state) {
-            sendCommand(`/led/${state}`);
+            sendCommand(`/led/${state}`, "LED", state);
         }
 
         function controlHeater(state) {
-            sendCommand(`/heater/${state}`);
+            sendCommand(`/heater/${state}`, "히터", state);
         }
 
         function capturePhoto() {
@@ -119,12 +126,16 @@
     <div class="container">
         <!-- 로고 영역 -->
         <div class="logo">
-            <img src="/static/logo-1/logo-1.png" alt="로고">
+            <img src="/dna-control-system/logo-1.png" alt="로고">
         </div>
 
         <h1>온도 제어 시스템</h1>
 
         <div class="status">현재 온도: <span id="temperature-display">--</span></div>
+
+        <!-- LED 및 히터 상태 표시 -->
+        <div class="device-status" id="LED-status">LED 상태: --</div>
+        <div class="device-status" id="히터-status">히터 상태: --</div>
 
         <button onclick="controlLED('on')">LED ON</button>
         <button onclick="controlLED('off')">LED OFF</button>

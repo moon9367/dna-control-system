@@ -31,8 +31,8 @@ void loop() {
   // 현재 온도 읽기
   float temperature = readTemperature();
 
-  // 현재 온도를 시리얼로 출력
-  Serial.print("TEMP:");
+  // 주기적으로 온도 데이터를 시리얼로 전송
+  Serial.print("Temperature:");
   Serial.println(temperature);
 
   // 시리얼 명령 처리

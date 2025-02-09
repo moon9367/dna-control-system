@@ -17,14 +17,12 @@ float ki = 0.1;   // 적분 이득
 float kd = 1.0;   // 미분 이득
 
 // PID 변수
-float setPoint = 40;     // 목표 온도 (정수)
-float integral = 0;      // 적분 항
-float previousError = 0; // 이전 오차
+float targetTemperature = 40.0; // 목표 온도 (정수)
+float integral = 0.0;           // 적분 항
+float previousError = 0.0;      // 이전 오차
+int currentTemperature = 0;     // 현재 온도 (정수)
 
-// 전역 변수
-int currentTemperature = 0; // 현재 온도 (정수)
-
-// 온도 읽기 함수
+// 온도 계산 함수
 int readTemperature() {
   int analogValue = analogRead(tempSensorPin);
   if (analogValue == 0) return -273; // 아날로그 값이 0이면 에러 방지
@@ -36,9 +34,9 @@ int readTemperature() {
 
 // PID 제어 함수
 void controlHeater() {
-  float error = setPoint - currentTemperature; // 현재 오차
-  integral += error;                           // 적분 계산
-  float derivative = error - previousError;    // 미분 계산
+  float error = targetTemperature - currentTemperature; // 현재 오차
+  integral += error;                                    // 적분 계산
+  float derivative = error - previousError;             // 미분 계산
   float output = kp * error + ki * integral + kd * derivative; // PID 출력 계산
 
   // 출력 제한 (0~255로 매핑)
@@ -62,14 +60,38 @@ void setup() {
 }
 
 void loop() {
-  // 현재 온도 읽기
+  // 명령어 수신 확인
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n'); // 명령어 읽기 (줄바꿈 기준)
+    command.trim(); // 공백 제거
+
+    // 명령어 처리
+    if (command == "HEATER_ON") {
+      heaterOn = true;
+    } else if (command == "HEATER_OFF") {
+      heaterOn = false;
+      digitalWrite(heaterPin, LOW); // 히터 끄기
+    } else if (command == "LED_ON") {
+      digitalWrite(ledPin, HIGH); // LED 켜기
+    } else if (command == "LED_OFF") {
+      digitalWrite(ledPin, LOW);  // LED 끄기
+    }
+  }
+
+  // 온도 읽기
   currentTemperature = readTemperature();
 
-  // PID 제어 함수 호출
-  controlHeater();
+  // 히터 제어 (PID 방식)
+  if (heaterOn) {
+    controlHeater();
+  } else {
+    analogWrite(heaterPin, 0); // 히터 끄기
+  }
 
-  // 온도와 히터 출력 표시
+  // 온도 데이터 전송
   Serial.print("Temperature: ");
   Serial.println(currentTemperature);
-  delay(1000); // 1초 간격으로 출력
+
+  // 1초 대기
+  delay(1000);
 }

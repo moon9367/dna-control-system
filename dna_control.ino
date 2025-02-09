@@ -1,3 +1,5 @@
+// Arduino 코드 - 온도 제어 및 PID 포함
+
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀
 const int heaterPin = 9;       // 히터 제어 핀
@@ -22,24 +24,24 @@ const float Kd = 1.0;  // 미분 상수
 float integral = 0.0;
 float lastError = 0.0;
 
-// 히터 동작 시간 관리
-unsigned long heaterOnTime = 0;
+// 히터 동작 상태
 bool heaterOn = false;
+unsigned long heaterStartTime = 0;
 
 // 온도 읽기 함수
 float readTemperature() {
-  int analogValue = analogRead(tempSensorPin);
-  float resistance = (1023.0 / analogValue - 1) * resistorValue;
-  float temperature = 1 / (log(resistance / refResistance) / beta + 1 / (refTemp + 273.15)) - 273.15;
+  int analogValue = analogRead(tempSensorPin); // 아날로그 값 읽기
+  float resistance = (1023.0 / analogValue - 1) * resistorValue; // 서미스터 저항 계산
+  float temperature = 1 / (log(resistance / refResistance) / beta + 1 / (refTemp + 273.15)) - 273.15; // 온도 계산
   return temperature;
 }
 
 // PID 제어 함수
 float calculatePID(float target, float current) {
   float error = target - current;
-  integral += error;                        // 적분 (누적 오차)
-  float derivative = error - lastError;    // 미분 (현재 오차 - 이전 오차)
-  lastError = error;                       // 이전 오차 갱신
+  integral += error;
+  float derivative = error - lastError;
+  lastError = error;
 
   // PID 출력 계산
   float output = Kp * error + Ki * integral + Kd * derivative;
@@ -57,55 +59,31 @@ void setup() {
   pinMode(heaterPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
 
-  digitalWrite(heaterPin, LOW); // 히터 초기 상태: 꺼짐
-  digitalWrite(ledPin, LOW);   // LED 초기 상태: 꺼짐
+  digitalWrite(heaterPin, LOW);
+  digitalWrite(ledPin, LOW);
 
-  Serial.println("Arduino PID 제어 초기화 완료");
+  Serial.println("Arduino 초기화 완료");
 }
 
 void loop() {
-  // 온도 읽기
+  // 현재 온도 읽기
   float temperature = readTemperature();
+  Serial.print("Current Temperature: ");
+  Serial.println(temperature);
 
-  // PID 제어
-  if (heaterOn) {
-    if (temperature >= targetTemperature + 10.0) {
-      // 온도가 목표 온도 +10도 이상일 경우 강제 종료
-      digitalWrite(heaterPin, LOW);
-      heaterOn = false;
-      heaterOnTime = 0; // 히터 시간 초기화
-      Serial.println("Heater OFF: 온도 초과!");
-    } else {
-      // PID 출력 계산 및 히터 제어
-      float pidOutput = calculatePID(targetTemperature, temperature);
-      analogWrite(heaterPin, pidOutput);
-    }
-  }
-
-  // 히터 자동 종료 (10분 이상 동작 시)
-  if (heaterOn && (millis() - heaterOnTime >= 10L * 60L * 1000L)) {
-    digitalWrite(heaterPin, LOW);
-    heaterOn = false;
-    heaterOnTime = 0; // 히터 시간 초기화
-    Serial.println("Heater OFF: 10분 이상 동작하여 자동 종료");
-  }
-
-  // 명령 수신 처리
+  // 명령 처리
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     command.trim();
 
     if (command == "HEATER_ON") {
-      if (!heaterOn) {
-        heaterOn = true;
-        heaterOnTime = millis(); // 히터 켜진 시간 기록
-        Serial.println("HEATER_ON_OK");
-      }
+      heaterOn = true;
+      heaterStartTime = millis();
+      Serial.println("Heater ON");
     } else if (command == "HEATER_OFF") {
       digitalWrite(heaterPin, LOW);
       heaterOn = false;
-      heaterOnTime = 0; // 히터 시간 초기화
-      Serial.println("HEATER_OFF_OK");
+      Serial.println("Heater OFF");
     } else if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH);
       Serial.println("LED_ON_OK");
@@ -117,10 +95,24 @@ void loop() {
     }
   }
 
-  // 온도 출력
-  Serial.print("Current Temperature: ");
-  Serial.print(temperature);
-  Serial.println(" °C");
+  // PID 제어 동작
+  if (heaterOn) {
+    if (temperature >= targetTemperature + 10.0) {
+      // 온도 초과 시 히터 강제 종료
+      digitalWrite(heaterPin, LOW);
+      heaterOn = false;
+      Serial.println("Heater OFF: 온도 초과");
+    } else if (millis() - heaterStartTime >= 10L * 60L * 1000L) {
+      // 히터 10분 이상 동작 시 자동 종료
+      digitalWrite(heaterPin, LOW);
+      heaterOn = false;
+      Serial.println("Heater OFF: 10분 동작 제한");
+    } else {
+      // PID 제어
+      float pidOutput = calculatePID(targetTemperature, temperature);
+      analogWrite(heaterPin, pidOutput);
+    }
+  }
 
-  delay(1000); // 1초 간격으로 실행
+  delay(1000); // 1초 간격
 }

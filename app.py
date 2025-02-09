@@ -14,7 +14,7 @@ picam2 = Picamera2()
 # 카메라 설정
 config = picam2.create_still_configuration(
     main={"size": (1920, 1080), "format": "RGB888"},
-    transform=libcamera.Transform(hflip=0, vflip=1)  # 상하 반전 설정
+    transform=libcamera.Transform(hflip=1, vflip=1)  # 상하 반전 설정
 )
 picam2.configure(config)
 picam2.start()

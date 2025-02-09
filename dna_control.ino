@@ -9,6 +9,9 @@ const int ledPin = 10;         // LED 제어 핀
 const float targetTemperature = 40.0; // 목표 온도
 const float hysteresis = 2.0;         // 히스테리시스 값 (온도 차)
 
+// 플래그
+bool enableTemperatureReading = true; // 온도 읽기 활성화 여부
+
 // 온도 읽기 함수
 float readTemperature() {
   int analogValue = analogRead(tempSensorPin); // 서미스터로부터 아날로그 값 읽기
@@ -30,37 +33,51 @@ void setup() {
 }
 
 void loop() {
-  // 현재 온도 읽기
-  float temperature = readTemperature();
+  // 온도 읽기
+  if (enableTemperatureReading) {
+    float temperature = readTemperature();
+    Serial.print("현재 온도: ");
+    Serial.println(temperature);
+    delay(1000); // 온도 읽기 주기
+  }
 
-  // 주기적으로 온도 데이터를 시리얼로 전송
-  Serial.print("Temperature:");
-  Serial.println(temperature);
-
-  // 명령어 처리 함수 호출
+  // 명령 처리
   handleSerialCommands();
-
-  delay(1000); // 1초 대기 (다음 루프 실행 전)
 }
 
 void handleSerialCommands() {
-  // 시리얼 명령 처리
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n'); // 시리얼에서 명령 읽기
     command.trim(); // 명령 문자열의 공백 제거
 
+    // 온도 읽기 일시 중단
+    enableTemperatureReading = false;
+
     if (command == "HEATER_ON") {
-      // 히터 ON: 10분 동안 유지
-      digitalWrite(heaterPin, HIGH); // 히터 켜기
+      Serial.println("HEATER_ON 명령 실행");
+      // 히터 제어 로직: 40도 유지
+      float temperature = readTemperature();
+      if (temperature >= targetTemperature) {
+        digitalWrite(heaterPin, LOW); // 목표 온도 도달 시 히터 끄기
+        Serial.println("히터 OFF: 목표 온도 도달");
+      } else if (temperature <= targetTemperature - hysteresis) {
+        digitalWrite(heaterPin, HIGH); // 온도가 낮아지면 히터 켜기
+        Serial.println("히터 ON: 온도가 목표치 이하");
+      }
     } else if (command == "HEATER_OFF") {
-      // 히터 OFF: 강제로 끄기
-      digitalWrite(heaterPin, LOW);
+      digitalWrite(heaterPin, LOW); // 히터 끄기
+      Serial.println("HEATER_OFF 명령 실행");
     } else if (command == "LED_ON") {
-      // LED ON: LED 켜기
-      digitalWrite(ledPin, HIGH);
+      digitalWrite(ledPin, HIGH); // LED 켜기
+      Serial.println("LED_ON 명령 실행");
     } else if (command == "LED_OFF") {
-      // LED OFF: LED 끄기
-      digitalWrite(ledPin, LOW);
+      digitalWrite(ledPin, LOW); // LED 끄기
+      Serial.println("LED_OFF 명령 실행");
+    } else {
+      Serial.println("알 수 없는 명령입니다.");
     }
+
+    // 명령 처리 완료 후 온도 읽기 재개
+    enableTemperatureReading = true;
   }
 }

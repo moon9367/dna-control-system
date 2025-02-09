@@ -15,6 +15,11 @@ const int refResistance = 100000; // 기준 저항 값 (100K)
 const float targetTemperature = 40.0;  // "HEATER_ON" 명령 시 유지할 온도
 const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 
+// 이동 평균 필터 설정
+#define SAMPLE_SIZE 10 // 이동 평균에 사용할 샘플 크기
+float temperatureSamples[SAMPLE_SIZE];
+int sampleIndex = 0;
+
 // 전역 변수
 float currentTemperature = 0.0; // 실시간 온도 저장
 bool heaterOn = false;          // 히터 상태
@@ -26,7 +31,17 @@ float readTemperature() {
 
   float resistance = (1023.0 / analogValue - 1) * resistorValue; // 저항 계산
   float temperature = 1 / (log(resistance / refResistance) / beta + 1 / (refTemp + 273.15)) - 273.15; // 온도 계산
-  return temperature;
+
+  // 이동 평균 필터 적용
+  temperatureSamples[sampleIndex] = temperature; // 현재 측정값 저장
+  sampleIndex = (sampleIndex + 1) % SAMPLE_SIZE; // 인덱스 순환
+
+  // 평균값 계산
+  float averageTemperature = 0.0;
+  for (int i = 0; i < SAMPLE_SIZE; i++) {
+    averageTemperature += temperatureSamples[i];
+  }
+  return averageTemperature / SAMPLE_SIZE; // 평균 온도 반환
 }
 
 void setup() {
@@ -37,6 +52,11 @@ void setup() {
 
   // 시리얼 통신 시작
   Serial.begin(9600);
+
+  // 이동 평균 초기화
+  for (int i = 0; i < SAMPLE_SIZE; i++) {
+    temperatureSamples[i] = 0.0;
+  }
 }
 
 void loop() {

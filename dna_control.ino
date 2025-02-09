@@ -38,7 +38,7 @@ void loop() {
   Serial.println(temperature);
 
   delay(2000);  // 2초마다 데이터 전송
-}
+
 
 
   // 명령 처리

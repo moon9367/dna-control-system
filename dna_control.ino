@@ -6,8 +6,8 @@ const int heaterPin = 9;      // 히터 제어 핀
 const int ledPin = 10;        // LED 제어 핀
 
 // 온도 계산에 필요한 상수
-const float SERIES_RESISTOR = 10000.0;  // 시리즈 저항 값 (10kΩ)
-const float NOMINAL_RESISTANCE = 10000.0; // 서미스터의 공칭 저항 (25°C에서 10kΩ)
+const float SERIES_RESISTOR = 100000.0;  // 시리즈 저항 값 (10kΩ)
+const float NOMINAL_RESISTANCE = 100000.0; // 서미스터의 공칭 저항 (25°C에서 10kΩ)
 const float NOMINAL_TEMPERATURE = 25.0;  // 공칭 온도 (25°C)
 const float BETA_COEFFICIENT = 3950.0;   // 서미스터의 베타 계수
 

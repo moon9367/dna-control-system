@@ -11,10 +11,12 @@ import zipfile
 app = Flask(__name__)
 picam2 = Picamera2()
 
-# 카메라 설정
-config = picam2.create_still_configuration(main={"size": (1920, 1080)})
+# 카메라 설정에서 flip 사용
+config = picam2.create_still_configuration(
+    main={"size": (1920, 1080), "format": "RGB888"},
+    transform=libcamera.Transform(hflip=0, vflip=1)  # 상하 반전
+)
 picam2.configure(config)
-picam2.rotation = 180  # 상하 반전
 picam2.start()
 
 # 카메라 초점 모드 설정

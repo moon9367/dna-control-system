@@ -71,7 +71,7 @@ def read_temperature():
                 print(f"온도 읽기 오류: {e}")
 
         # 2초 대기 (온도 읽기 주기 설정)
-        time.sleep(2
+        time.sleep(2)
 
 
 

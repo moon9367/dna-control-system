@@ -116,38 +116,27 @@ def get_temperature():
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
-            stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 명령 전 대기
+            stop_temp_thread.set()  # 온도 읽기 중단
+            time.sleep(0.5)
 
             try:
                 ser.reset_input_buffer()
                 ser.write((command + "\n").encode())
                 print(f"➡️ 명령어 전송: {command}")
 
-                time.sleep(1.5)  # 아두이노 응답 대기
-
-                response = None
-                for _ in range(10):  # 최대 10회 재시도
+                for _ in range(20):  # 최대 20회 데이터 확인
                     raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
-                    print(f"🔄 수신 데이터: {raw_data}")  # 디버깅용 로그
+                    print(f"🔄 수신 데이터: {raw_data}")
 
-                    # "Temperature:"로 시작하는 데이터는 온도로 처리
                     if raw_data.startswith("Temperature:"):
                         global current_temperature
                         current_temperature = float(raw_data.split(":")[1].strip())
                         print(f"📡 현재 온도: {current_temperature}°C")
-                    elif raw_data.startswith("CMD:"):
-                        response = raw_data.split(":")[1].strip()
+                    elif command in raw_data:
+                        print(f"✅ 명령 응답 수신: {raw_data}")
                         break
-
-                if response:
-                    print(f"✅ 명령 응답 수신: {response}")
-                else:
-                    print("⚠️ 유효한 명령 응답 없음")
-
             except Exception as e:
-                print(f"❌ 명령어 전송 오류: {e}")
-
+                print(f"❌ 명령 처리 오류: {e}")
             finally:
                 stop_temp_thread.clear()  # 온도 읽기 재개
                 print("▶️ 온도 읽기 재개")

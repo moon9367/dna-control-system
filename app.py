@@ -112,9 +112,19 @@ temp_thread.start()
 def index():
     return render_template("index.html")
 
-@app.route("/temperature")
+@app.route('/temperature')
 def get_temperature():
-    return jsonify({"temperature": current_temperature})
+    try:
+        ser.flushInput()  # 시리얼 버퍼 초기화
+        ser.write(b"TEMP_REQUEST\n")  # 아두이노에 온도 요청 (필요 시 아두이노 코드 수정)
+        temperature = ser.readline().decode('utf-8').strip()  # 응답 읽기
+        if temperature.startswith("Temperature:"):
+            value = float(temperature.split(":")[1].strip())
+            return jsonify({"temperature": value})
+        else:
+            return jsonify({"error": "Invalid response from Arduino"})
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 def send_command_to_arduino(command):
     if ser:

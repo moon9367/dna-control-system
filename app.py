@@ -141,7 +141,6 @@ def send_command_to_arduino(command):
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
-            time.sleep(1)
             finally:
                 stop_temp_thread.clear()  # 온도 읽기 재개
                 print("▶️ 온도 읽기 재개")

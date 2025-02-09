@@ -9,17 +9,14 @@ const float beta = 3950;          // 서미스터 베타 계수
 const int refTemp = 25;           // 기준 온도 (섭씨)
 const int refResistance = 100000; // 기준 저항 값 (100K)
 
-// PID 제어 상수
+// 제어 상수
 const float targetTemperature = 40.0; // 목표 온도
-const float hysteresis = 2.0;         // 히스테리시스 값
-const float Kp = 2.0, Ki = 0.5, Kd = 1.0; // PID 상수
+const float hysteresis = 2.0;         // 히스테리시스 값 (온도 차)
+const unsigned long maxHeaterTime = 10L * 60L * 1000L; // 10분 (밀리초)
 
-// PID 변수
-float integral = 0.0;
-float lastError = 0.0;
-
-// 히터 활성화 상태
+// 히터 상태
 bool isHeaterOn = false;
+unsigned long heaterStartTime = 0;
 
 // 온도 읽기 함수
 float readTemperature() {
@@ -53,11 +50,18 @@ void loop() {
 
     if (command == "HEATER_ON") {
       isHeaterOn = true;
-      Serial.println("Heater turned ON");
+      heaterStartTime = millis();
+      Serial.println("Heater ON: 제어 시작");
     } else if (command == "HEATER_OFF") {
       digitalWrite(heaterPin, LOW); // 히터 끄기
       isHeaterOn = false;
-      Serial.println("Heater turned OFF");
+      Serial.println("Heater OFF: 제어 중지");
+    } else if (command == "LED_ON") {
+      digitalWrite(ledPin, HIGH); // LED 켜기
+      Serial.println("LED ON");
+    } else if (command == "LED_OFF") {
+      digitalWrite(ledPin, LOW); // LED 끄기
+      Serial.println("LED OFF");
     } else if (command == "GET_TEMP") {
       Serial.print("Temperature: ");
       Serial.println(temperature);
@@ -68,25 +72,22 @@ void loop() {
 
   // 히터 제어 로직
   if (isHeaterOn) {
-    if (temperature >= targetTemperature + 10.0) {
-      // 온도가 목표값 +10도 이상이면 강제 종료
-      digitalWrite(heaterPin, LOW); // 히터 끄기
-      isHeaterOn = false;
-      Serial.println("Heater OFF: 온도 초과");
-    } else if (temperature <= targetTemperature - hysteresis) {
-      // PID 계산
-      float error = targetTemperature - temperature;
-      integral += error;
-      float derivative = error - lastError;
-      lastError = error;
+    unsigned long elapsedTime = millis() - heaterStartTime;
 
-      float pidOutput = Kp * error + Ki * integral + Kd * derivative;
-      pidOutput = constrain(pidOutput, 0, 255); // PID 출력 제한
-
-      analogWrite(heaterPin, pidOutput);
-    } else {
-      // 목표 온도에 도달했을 때 히터 끄기
+    if (elapsedTime >= maxHeaterTime) {
+      // 히터 동작 시간이 10분을 초과하면 종료
       digitalWrite(heaterPin, LOW);
+      isHeaterOn = false;
+      Serial.println("Heater OFF: 10분 유지 후 종료");
+    } else {
+      // 히스테리시스 기반 온도 제어
+      if (temperature >= targetTemperature) {
+        digitalWrite(heaterPin, LOW); // 히터 끄기
+        Serial.println("Heater OFF: 온도가 목표치 이상");
+      } else if (temperature <= targetTemperature - hysteresis) {
+        digitalWrite(heaterPin, HIGH); // 히터 켜기
+        Serial.println("Heater ON: 온도가 목표치 이하");
+      }
     }
   }
 

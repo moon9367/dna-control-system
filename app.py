@@ -63,7 +63,7 @@ def read_temperature():
                         print(f"📡 현재 온도: {current_temperature}°C")
             except Exception as e:
                 print(f"온도 읽기 오류: {e}")
-        time.sleep(2)  # 2초 간격으로 온도 데이터 읽기
+        time.sleep(5)  # 2초 간격으로 온도 데이터 읽기
 
 
 

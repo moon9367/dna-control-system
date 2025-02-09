@@ -23,6 +23,11 @@
         h1 {
             color: #333;
         }
+        .logo img {
+            max-width: 200px; /* 로고 크기 */
+            height: auto;
+            margin-bottom: 20px;
+        }
         button {
             background-color: #4CAF50;
             color: white;
@@ -64,11 +69,11 @@
         }
 
         function controlLED(state) {
-            sendCommand(`/led/${state}`);  // ✅ 수정된 URL (action 제거)
+            sendCommand(`/led/${state}`);
         }
 
         function controlHeater(state) {
-            sendCommand(`/heater/${state}`);  // ✅ 수정된 URL (action 제거)
+            sendCommand(`/heater/${state}`);
         }
 
         function capturePhoto() {
@@ -105,13 +110,18 @@
         }
 
         // 2초마다 온도 상태 업데이트
-        setInterval(updateTemperature, 2000);
+        setInterval(updateTemperature, 5000);
         // 페이지 로드 시 최신 사진 요청
         window.onload = getLatestPhoto;
     </script>
 </head>
 <body>
     <div class="container">
+        <!-- 로고 영역 -->
+        <div class="logo">
+            <img src="/static/logo-1/logo.png" alt="로고">
+        </div>
+
         <h1>온도 제어 시스템</h1>
 
         <div class="status">현재 온도: <span id="temperature-display">--</span></div>

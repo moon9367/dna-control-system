@@ -1,6 +1,7 @@
 {
-    "configuration": "cpu=atmega328",
+    "configuration": "cpu=atmega328old",
     "board": "arduino:avr:nano",
     "sketch": "dna_control.ino",
-    "port": "COM6"
+    "port": "COM6",
+    "programmer": "avrisp"
 }

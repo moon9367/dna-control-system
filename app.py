@@ -69,9 +69,9 @@ def read_temperature():
                         print(f"📡 현재 온도: {current_temperature}°C")
             except Exception as e:
                 print(f"온도 읽기 오류: {e}")
-        
+
         # 2초 대기 (온도 읽기 주기 설정)
-        time.sleep(2)
+        time.sleep(2
 
 
 
@@ -135,7 +135,7 @@ def send_command_to_arduino(command):
                     if raw_data.startswith("CMD:"):  # 명령 응답
                         response = raw_data.split(":")[1].strip()
                         break
-                    elif raw_data.startswith("TEMP:"):  # 온도 데이터는 업데이트
+                    elif raw_data.startswith("Temperature:"):  # 온도 데이터는 업데이트
                         current_temperature = float(raw_data.split(":")[1].strip())
                         print(f"📡 현재 온도 (명령 중): {current_temperature}°C")
 

@@ -1,3 +1,5 @@
+#include <Arduino.h>
+
 // 핀 정의
 const int tempSensorPin = A0;  // 서미스터 핀
 const int heaterPin = 9;       // 히터 제어 핀
@@ -35,6 +37,13 @@ void loop() {
   Serial.print("Temperature:");
   Serial.println(temperature);
 
+  // 명령어 처리 함수 호출
+  handleSerialCommands();
+
+  delay(1000); // 1초 대기 (다음 루프 실행 전)
+}
+
+void handleSerialCommands() {
   // 시리얼 명령 처리
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n'); // 시리얼에서 명령 읽기
@@ -56,6 +65,4 @@ void loop() {
       digitalWrite(ledPin, LOW);
     }
   }
-
-  delay(1000); // 1초 대기 (다음 루프 실행 전)
 }

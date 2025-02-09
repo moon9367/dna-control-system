@@ -117,40 +117,35 @@ def get_temperature():
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
-            print("⏸️ 온도 출력 대기")
-            stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 딜레이 추가
+            stop_temp_thread.set()  # 온도 읽기 중지
+            time.sleep(0.5)         # 명령어 전송 전 대기
 
             try:
-                ser.reset_input_buffer()  # 버퍼 초기화
+                ser.reset_input_buffer()
                 ser.write((command + "\n").encode())
-                ser.flush()
                 print(f"➡️ 명령어 전송: {command.strip()}")
+                time.sleep(1.5)  # 아두이노 응답 대기
 
-                time.sleep(1.5)  # ++ 아두이노 응답 대기 시간 연장
-
-                # 응답 필터링 (온도 데이터 제외)
+                # 명령어 응답 읽기
                 response = None
                 for _ in range(5):
                     raw_data = ser.readline().decode('utf-8', errors='ignore').strip()
-                    if raw_data and not raw_data.startswith("Temperature"):
+                    if raw_data and not raw_data.startswith("TEMP:"):  # 온도 데이터 제외
                         response = raw_data
                         break
-                    time.sleep(0.1)
 
                 if response:
                     print(f"✅ 아두이노 응답 수신: {response}")
                 else:
-                    response = "No response from Arduino"
-                    print("⚠️ 버퍼에 유효한 데이터 없음")
+                    print("⚠️ 유효한 명령 응답 없음")
 
             except Exception as e:
                 print(f"❌ 명령어 전송 오류: {e}")
-                response = "No response from Arduino"
 
-            time.sleep(0.5)  # 딜레이 추가
-            stop_temp_thread.clear()  # 온도 읽기 재개
-            print("▶️ 온도 출력 시작")
+            finally:
+                stop_temp_thread.clear()  # 온도 읽기 재개
+                print("▶️ 온도 읽기 재개")
+
 
             return response
 

@@ -17,10 +17,10 @@ float ki = 0.1;   // 적분 이득
 float kd = 1.0;   // 미분 이득
 
 // PID 변수
-float targetTemperature = 40.0; // 목표 온도 (정수)
+float targetTemperature = 40.0; // 목표 온도
 float integral = 0.0;           // 적분 항
 float previousError = 0.0;      // 이전 오차
-int currentTemperature = 0;     // 현재 온도 (정수)
+int currentTemperature = 0;     // 현재 온도
 
 // 온도 계산 함수
 int readTemperature() {
@@ -32,18 +32,15 @@ int readTemperature() {
   return round(temperature); // 소숫점 제거
 }
 
-// PID 제어 함수
+// PID 제어 함수 (히터 전용)
 void controlHeater() {
   float error = targetTemperature - currentTemperature; // 현재 오차
   integral += error;                                    // 적분 계산
   float derivative = error - previousError;             // 미분 계산
   float output = kp * error + ki * integral + kd * derivative; // PID 출력 계산
 
-  // 출력 제한 (0~255로 매핑)
-  output = constrain(output, 0, 255);
-
   // 히터 출력 조정
-  analogWrite(heaterPin, output);
+  analogWrite(heaterPin, constrain(output, 0, 255)); // 0~255 범위로 제한
 
   // 이전 오차 업데이트
   previousError = error;
@@ -65,28 +62,19 @@ void loop() {
     String command = Serial.readStringUntil('\n'); // 명령어 읽기 (줄바꿈 기준)
     command.trim(); // 공백 제거
 
-    // 명령어 처리
-    if (command == "HEATER_ON") {
-      heaterOn = true;
-    } else if (command == "HEATER_OFF") {
-      heaterOn = false;
-      digitalWrite(heaterPin, LOW); // 히터 끄기
-    } else if (command == "LED_ON") {
+    // LED 제어 명령어
+    if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH); // LED 켜기
     } else if (command == "LED_OFF") {
-      digitalWrite(ledPin, LOW);  // LED 끄기
+      digitalWrite(ledPin, LOW); // LED 끄기
     }
   }
 
-  // 온도 읽기
+  // 현재 온도 읽기
   currentTemperature = readTemperature();
 
-  // 히터 제어 (PID 방식)
-  if (heaterOn) {
-    controlHeater();
-  } else {
-    analogWrite(heaterPin, 0); // 히터 끄기
-  }
+  // PID 제어 함수 호출
+  controlHeater();
 
   // 온도 데이터 전송
   Serial.print("Temperature: ");

@@ -52,8 +52,6 @@ void handleSerialCommands() {
     if (command == "HEATER_ON") {
       // 히터 ON: 10분 동안 유지
       digitalWrite(heaterPin, HIGH); // 히터 켜기
-      delay(10L * 60L * 1000L); // 10분 대기
-      digitalWrite(heaterPin, LOW); // 히터 끄기
     } else if (command == "HEATER_OFF") {
       // 히터 OFF: 강제로 끄기
       digitalWrite(heaterPin, LOW);

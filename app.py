@@ -129,17 +129,17 @@ def get_temperature():
 def send_command_to_arduino(command):
     if ser:
         with serial_lock:
-            print("⏸️ 온도 출력 대기")
-            stop_temp_thread.set()  # 온도 읽기 일시 중지
-            time.sleep(0.5)         # 딜레이 추가
+            print("⏸️ 온도 읽기 중지")
+            stop_temp_thread.set()  # 온도 읽기 스레드 일시 중지
+            time.sleep(0.5)
 
             try:
                 ser.reset_input_buffer()  # 버퍼 초기화
-                ser.write((command + "\n").encode())
+                ser.write((command + "\n").encode())  # 명령 전송
                 ser.flush()
                 print(f"➡️ 명령어 전송: {command.strip()}")
 
-                time.sleep(1.5)  # ++ 아두이노 응답 대기 시간 연장
+                time.sleep(1.5)  # 아두이노 응답 대기
 
                 # 응답 필터링 (온도 데이터 제외)
                 response = None
@@ -151,20 +151,22 @@ def send_command_to_arduino(command):
                     time.sleep(0.1)
 
                 if response:
-                    print(f"✅ 아두이노 응답 수신: {response}")
+                    print(f"✅ 아두이노 응답: {response}")
                 else:
-                    response = "No response from Arduino"
-                    print("⚠️ 버퍼에 유효한 데이터 없음")
+                    print("⚠️ 유효한 데이터 없음")
+                    response = "No response"
 
             except Exception as e:
-                print(f"❌ 명령어 전송 오류: {e}")
-                response = "No response from Arduino"
+                print(f"❌ 명령 전송 오류: {e}")
+                response = "Error"
 
-            time.sleep(0.5)  # 딜레이 추가
-            stop_temp_thread.clear()  # 온도 읽기 재개
-            print("▶️ 온도 출력 시작")
+            finally:
+                time.sleep(0.5)
+                stop_temp_thread.clear()  # 온도 읽기 스레드 재개
+                print("▶️ 온도 읽기 재개")
 
             return response
+
 
 @app.route("/led/on", methods=["POST"])
 def led_on():

@@ -10,8 +10,8 @@ git pull origin main || true
 mv -f index.html templates/ 2>/dev/null
 mv -f dna_control.ino dna_control/ 2>/dev/null
 
-# Arduino 코드 업로드
-/home/aiseed/dna-control-system/upload_arduino.sh || true
+# Arduino 코드 업로드 (실패해도 계속 진행)
+./upload_arduino.sh || true
 
 # Flask 서버 실행
 ./venv/bin/python app.py

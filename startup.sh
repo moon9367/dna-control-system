@@ -13,8 +13,5 @@ git pull origin main || true
 mv -f index.html templates/ 2>/dev/null
 mv -f dna_control.ino dna_control/ 2>/dev/null
 
-# Arduino 코드 업로드 (실패 무시)
-./upload_arduino.sh || true
-
 # Flask 서버 실행
 python app.py

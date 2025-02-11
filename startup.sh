@@ -30,7 +30,8 @@ else
 fi
 
 # 컴파일 (Old Bootloader)
-arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328old --build-path ~/dna-control-system/build $INO_PATH
+
+/home/aiseed/dna-control-system/bin/arduino-cli compile --fqbn arduino:avr:nano:cpu=atmega328old --build-path ~/dna-control-system/build $INO_PATH
 
 # 컴파일 결과 확인
 if [ $? -eq 0 ]; then
@@ -41,7 +42,8 @@ else
 fi
 
 # 업로드 (Old Bootloader)
-arduino-cli upload -p $SERIAL_PORT --fqbn arduino:avr:nano:cpu=atmega328old --input-dir ~/dna-control-system/build
+
+/home/aiseed/dna-control-system/bin/arduino-cli upload -p $SERIAL_PORT --fqbn arduino:avr:nano:cpu=atmega328old --input-dir ~/dna-control-system/build
 
 # 업로드 결과 확인
 if [ $? -eq 0 ]; then
@@ -54,7 +56,8 @@ else
     if [ $? -eq 0 ]; then
         echo "🔓 시리얼 포트 권한 설정 완료: $SERIAL_PORT"
         echo "🔁 업로드 재시도 중..."
-        arduino-cli upload -p $SERIAL_PORT --fqbn arduino:avr:nano:cpu=atmega328old --input-dir ~/dna-control-system/build
+        
+/home/aiseed/dna-control-system/bin/arduino-cli upload -p $SERIAL_PORT --fqbn arduino:avr:nano:cpu=atmega328old --input-dir ~/dna-control-system/build
 
         if [ $? -eq 0 ]; then
             echo "✅ 업로드 재시도 성공!"

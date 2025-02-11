@@ -12,6 +12,9 @@ cd /home/aiseed/dna-control-system || exit
 # 가상환경 활성화
 source venv/bin/activate
 
+# PYTHONPATH 설정
+export PYTHONPATH=/home/aiseed/dna-control-system/venv/lib/python3.9/site-packages
+
 # 최신 코드 가져오기
 git pull origin main || true
 

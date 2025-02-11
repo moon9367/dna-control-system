@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Python 경로 확인 로그 추가
-echo "Python path: $(which python)" > /home/aiseed/python_path.log
-echo "PYTHONPATH: $PYTHONPATH" >> /home/aiseed/python_path.log
+# 환경 변수 및 실행 경로 확인
+echo "Current working directory: $(pwd)" > /home/aiseed/systemd_debug.log
+echo "Python path: $(which python)" >> /home/aiseed/systemd_debug.log
+echo "Environment variables:" >> /home/aiseed/systemd_debug.log
+env >> /home/aiseed/systemd_debug.log
 
 # 작업 디렉토리로 이동
 cd /home/aiseed/dna-control-system || exit

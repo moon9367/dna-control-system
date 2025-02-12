@@ -1,17 +1,25 @@
 #!/bin/bash
 
+# 디렉토리 이동
+cd /home/aiseed/dna-control-system || { echo "❌ 경로 이동 실패: /home/aiseed/dna-control-system"; exit 1; }
+
 # 최신 코드 가져오기
-cd /home/aiseed/dna-control-system || exit
+git config --global --add safe.directory /home/aiseed/dna-control-system
 git pull origin main
 
-# 파일 이동
-mv -f index.html templates/ 2>/dev/null
-mv -f dna_control.ino dna_control/ 2>/dev/null
+# 스케치 파일 경로 확인
+INO_PATH=/home/aiseed/dna-control-system/dna_control/dna_control.ino
+if [ -f "$INO_PATH" ]; then
+    echo "✅ 스케치 파일 찾음: $INO_PATH"
+else
+    echo "❌ 오류: $INO_PATH 파일을 찾을 수 없습니다!"
+    exit 1
+fi
 
-/home/aiseed/dna-control-system/upload_arduino.sh
+# 아두이노 업로드 스크립트 실행
+/bin/bash /home/aiseed/dna-control-system/upload_arduino.sh
 
-# Flask 서버 실행 (백그라운드에서 실행)
+# Flask 서버 실행
 source /home/aiseed/dna-control-system/venv/bin/activate
-python app.py &
-
+python /home/aiseed/dna-control-system/app.py &
 echo "✅ Flask 서버 실행 완료!"

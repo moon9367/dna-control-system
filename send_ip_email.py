@@ -7,6 +7,10 @@ def get_ip():
     ip_address = os.popen("hostname -I").read().strip()
     return f"라즈베리파이 IP 주소: {ip_address}"
 
+with open("/home/aiseed/rc_local_log.txt", "a") as log_file:
+    log_file.write("send_ip_email.py script executed!\n")
+
+
 # 이메일 전송 함수
 def send_email():
     sender_email = "tspol9983@gmail.com"  # 발신 Gmail 주소

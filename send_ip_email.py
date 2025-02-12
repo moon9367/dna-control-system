@@ -1,21 +1,22 @@
 import smtplib
 from email.mime.text import MIMEText
 import os
+import time
+
+# 네트워크 연결 대기
+def wait_for_network():
+    for _ in range(10):  # 10초 동안 네트워크 연결 확인
+        try:
+            os.system("ping -c 1 google.com > /dev/null 2>&1")
+            return
+        except Exception as e:
+            time.sleep(1)  # 1초 대기
+    raise Exception("네트워크 연결 실패")
 
 # IP 주소 가져오기
 def get_ip():
     ip_address = os.popen("hostname -I").read().strip()
     return f"라즈베리파이 IP 주소: {ip_address}"
-
-log_file_path = "/home/aiseed/rc_local_log.txt"
-
-# 로그 작성
-try:
-    with open(log_file_path, "a") as log_file:
-        log_file.write("send_ip_email.py script executed!\n")
-except Exception as e:
-    print(f"로그 작성 실패: {e}")
-
 
 # 이메일 전송 함수
 def send_email():
@@ -43,4 +44,8 @@ def send_email():
         print(f"이메일 전송 실패: {e}")
 
 if __name__ == "__main__":
-    send_email()
+    try:
+        wait_for_network()
+        send_email()
+    except Exception as e:
+        print(f"스크립트 실행 실패: {e}")

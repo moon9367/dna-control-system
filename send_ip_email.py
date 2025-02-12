@@ -5,11 +5,14 @@ import time
 
 # 네트워크 연결 대기
 def wait_for_network():
-    for _ in range(10):  # 10초 동안 네트워크 연결 확인
-        try:
-            os.system("ping -c 1 google.com > /dev/null 2>&1")
+    max_retries = 30  # 최대 대기 시간: 30초 (1초 간격 * 30번 시도)
+    for attempt in range(max_retries):
+        response = os.system("ping -c 1 google.com > /dev/null 2>&1")
+        if response == 0:
+            print("네트워크 연결 확인 완료")
             return
-        except Exception as e:
+        else:
+            print(f"네트워크 연결 대기 중... ({attempt + 1}/{max_retries})")
             time.sleep(1)  # 1초 대기
     raise Exception("네트워크 연결 실패")
 
@@ -45,7 +48,7 @@ def send_email():
 
 if __name__ == "__main__":
     try:
-        wait_for_network()
-        send_email()
+        wait_for_network()  # 네트워크 연결 대기
+        send_email()        # 이메일 전송
     except Exception as e:
-        print(f"스크립트 실행 실패: {e}")
+        print(f"스크립트 실행 중 오류 발생: {e}")

@@ -173,17 +173,25 @@
         // Socket.IO 연결
         const socket = io();
 
-        // 서버로부터 로그 메시지를 수신하여 화면에 추가
-        socket.on('log', (msg) => {
-            const logContainer = document.getElementById('log-container');
-            const logMessage = document.createElement('div');
-            logMessage.className = 'log-message';
-            logMessage.textContent = msg.data;
+socket.on('connect', () => {
+    console.log("✅ Socket.IO 연결 성공");
+});
 
-            // 로그 메시지를 추가하고 스크롤을 최신 상태로 유지
-            logContainer.appendChild(logMessage);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        });
+socket.on('disconnect', () => {
+    console.log("❌ Socket.IO 연결 끊김");
+});
+
+// 서버로부터 로그 메시지를 수신하여 화면에 추가
+socket.on('log', (msg) => {
+    const logContainer = document.getElementById('log-container');
+    const logMessage = document.createElement('div');
+    logMessage.className = 'log-message';
+    logMessage.textContent = msg.data;
+
+    logContainer.appendChild(logMessage);
+    logContainer.scrollTop = logContainer.scrollHeight;
+});
+
 
         // 주기적으로 온도 상태 업데이트
         setInterval(updateTemperature, 3000);

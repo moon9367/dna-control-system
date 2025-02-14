@@ -20,8 +20,8 @@ const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 float temperatureSamples[SAMPLE_SIZE];
 int sampleIndex = 0;
 
-unsigned long heaterStartTime = 0; // 히터가 켜진 시간을 저장할 변수
-const unsigned long heaterMaxDuration = 1*60000; // 히터 최대 동작 시간 (1분 = 60000ms)
+unsigned long heaterStartTime = 0;        // 히터가 켜진 시간을 저장할 변수
+const unsigned long heaterMaxDuration = 60000; // 히터 최대 동작 시간 (1분)
 
 // 전역 변수
 float currentTemperature = 0.0; // 실시간 온도 저장
@@ -44,7 +44,7 @@ float readTemperature() {
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     averageTemperature += temperatureSamples[i];
   }
-  const unsigned long heaterMaxDuration = 1*60000;
+  return averageTemperature / SAMPLE_SIZE; // 평균값 반환
 }
 
 void setup() {
@@ -62,15 +62,7 @@ void setup() {
   }
 }
 
-  void loop() {
-    if (heaterOn) {
-      if (millis() - heaterStartTime > heaterMaxDuration) {
-        // 히터가 1분 이상 동작한 경우 자동 OFF
-        digitalWrite(HEATER_PIN, LOW);
-        heaterOn = false;
-        Serial.println("히터가 최대 동작 시간을 초과하여 OFF되었습니다.");
-      }
-    }
+void loop() {
   // 명령어 수신 확인
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n'); // 명령어 읽기 (줄바꿈 기준)
@@ -79,26 +71,38 @@ void setup() {
     // 명령어 처리
     if (command == "HEATER_ON") {
       heaterOn = true;
+      heaterStartTime = millis(); // 히터 시작 시간 기록
+      Serial.println("히터가 켜졌습니다.");
     } else if (command == "HEATER_OFF") {
       heaterOn = false;
       digitalWrite(heaterPin, LOW); // 히터 끄기
+      Serial.println("히터가 꺼졌습니다.");
     } else if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH); // LED 켜기
+      Serial.println("LED가 켜졌습니다.");
     } else if (command == "LED_OFF") {
       digitalWrite(ledPin, LOW);  // LED 끄기
+      Serial.println("LED가 꺼졌습니다.");
     }
   }
-}
 
   // 온도 읽기
   currentTemperature = readTemperature();
 
   // 히터 제어 (목표 온도 유지)
   if (heaterOn) {
-    if (currentTemperature < targetTemperature - temperatureThreshold) {
-      digitalWrite(heaterPin, HIGH); // 히터 켜기
-    } else if (currentTemperature > targetTemperature + temperatureThreshold) {
-      digitalWrite(heaterPin, LOW); // 히터 끄기
+    if (millis() - heaterStartTime > heaterMaxDuration) {
+      // 히터가 최대 동작 시간을 초과한 경우
+      heaterOn = false;
+      digitalWrite(heaterPin, LOW);
+      Serial.println("히터가 최대 동작 시간을 초과하여 OFF되었습니다.");
+    } else {
+      // 온도에 따라 히터 제어
+      if (currentTemperature < targetTemperature - temperatureThreshold) {
+        digitalWrite(heaterPin, HIGH); // 히터 켜기
+      } else if (currentTemperature > targetTemperature + temperatureThreshold) {
+        digitalWrite(heaterPin, LOW); // 히터 끄기
+      }
     }
   }
 

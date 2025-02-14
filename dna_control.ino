@@ -62,8 +62,6 @@ void setup() {
   }
 }
 
-void loop() {
-
   void loop() {
     if (heaterOn) {
       if (millis() - heaterStartTime > heaterMaxDuration) {

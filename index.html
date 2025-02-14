@@ -97,6 +97,7 @@
             let timestamp = new Date().getTime();  // 캐시 방지
             document.getElementById("photo").src = `/photos/${filename}?t=${timestamp}`;
         }
+    
 
         function getLatestPhoto() {
             fetch("/latest_photo")
@@ -116,8 +117,29 @@
             window.location.href = "/download_all";
         }
 
+        function confirmDeletePhotos() {
+        // 확인 팝업 띄우기
+        if (confirm("정말 모든 사진을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+            // "확인"을 클릭한 경우
+            fetch("/delete_all_photos", {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message); // 서버 응답 메시지 표시
+            })
+            .catch(error => {
+                console.error("사진 삭제 중 오류 발생:", error);
+                alert("사진 삭제 중 오류가 발생했습니다.");
+            });
+        } else {
+            // "취소"를 클릭한 경우
+            alert("사진 삭제가 취소되었습니다.");
+        }
+    }
+
         // 2초마다 온도 상태 업데이트
-        setInterval(updateTemperature, 5000);
+        setInterval(updateTemperature, 2000);
         // 페이지 로드 시 최신 사진 요청
         window.onload = getLatestPhoto;
     </script>
@@ -149,6 +171,8 @@
 
         <button onclick="downloadPhoto()">📥 현재 사진 다운로드</button>
         <button onclick="downloadAllPhotos()">📦 전체 사진 다운로드</button>
+        <button onclick="confirmDeletePhotos()">모든 사진 삭제</button>
+
     </div>
 </body>
 </html>

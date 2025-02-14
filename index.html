@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>온도 제어 시스템</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,72 +56,23 @@
             max-width: 100%;
             margin-top: 20px;
         }
+        .log-container {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            max-width: 600px;
+            margin: 20px auto 0;
+            max-height: 400px;
+            overflow-y: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .log-message {
+            font-size: 14px;
+            color: #333;
+            margin: 5px 0;
+        }
     </style>
-    <script>
-        function updateTemperature() {
-            fetch('/temperature')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("temperature-display").innerText = data.temperature + "°C";
-            })
-            .catch(error => console.error("온도 업데이트 오류:", error));
-        }
-
-        function sendCommand(url, device, state) {
-            fetch(url, { method: "POST" })
-            .then(response => response.json())
-            .then(result => {
-                document.getElementById(`${device}-status`).innerText = `${device} 상태: ${state.toUpperCase()}`;
-            })
-            .catch(error => console.error(`${device} 상태 업데이트 오류:`, error));
-        }
-
-        function controlLED(state) {
-            sendCommand(`/led/${state}`, "LED", state);
-        }
-
-        function controlHeater(state) {
-            sendCommand(`/heater/${state}`, "히터", state);
-        }
-
-        function capturePhoto() {
-            fetch("/capture", { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                if (data.photo_name) {
-                    updatePhoto(data.photo_name);
-                }
-            }).catch(error => console.error("📸 사진 촬영 오류:", error));
-        }
-
-        function updatePhoto(filename) {
-            let timestamp = new Date().getTime();  // 캐시 방지
-            document.getElementById("photo").src = `/photos/${filename}?t=${timestamp}`;
-        }
-
-        function getLatestPhoto() {
-            fetch("/latest_photo")
-            .then(response => response.json())
-            .then(data => {
-                if (data.photo_name) {
-                    updatePhoto(data.photo_name);
-                }
-            }).catch(error => console.error("최신 사진 불러오기 오류:", error));
-        }
-
-        function downloadPhoto() {
-            window.location.href = "/download_current";
-        }
-
-        function downloadAllPhotos() {
-            window.location.href = "/download_all";
-        }
-
-        // 2초마다 온도 상태 업데이트
-        setInterval(updateTemperature, 5000);
-        // 페이지 로드 시 최신 사진 요청
-        window.onload = getLatestPhoto;
-    </script>
 </head>
 <body>
     <div class="container">
@@ -150,5 +102,94 @@
         <button onclick="downloadPhoto()">📥 현재 사진 다운로드</button>
         <button onclick="downloadAllPhotos()">📦 전체 사진 다운로드</button>
     </div>
+
+    <!-- 실시간 로그 영역 -->
+    <div class="log-container" id="log-container">
+        <!-- 실시간 로그 메시지가 여기에 추가됩니다 -->
+    </div>
+
+    <script>
+        // Flask에서 현재 온도 업데이트
+        function updateTemperature() {
+            fetch('/temperature')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("temperature-display").innerText = data.temperature + "°C";
+                })
+                .catch(error => console.error("온도 업데이트 오류:", error));
+        }
+
+        // LED 및 히터 제어
+        function sendCommand(url, device, state) {
+            fetch(url, { method: "POST" })
+                .then(response => response.json())
+                .then(result => {
+                    document.getElementById(`${device}-status`).innerText = `${device} 상태: ${state.toUpperCase()}`;
+                })
+                .catch(error => console.error(`${device} 상태 업데이트 오류:`, error));
+        }
+
+        function controlLED(state) {
+            sendCommand(`/led/${state}`, "LED", state);
+        }
+
+        function controlHeater(state) {
+            sendCommand(`/heater/${state}`, "히터", state);
+        }
+
+        function capturePhoto() {
+            fetch("/capture", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.photo_name) {
+                        updatePhoto(data.photo_name);
+                    }
+                }).catch(error => console.error("📸 사진 촬영 오류:", error));
+        }
+
+        function updatePhoto(filename) {
+            let timestamp = new Date().getTime();  // 캐시 방지
+            document.getElementById("photo").src = `/photos/${filename}?t=${timestamp}`;
+        }
+
+        function getLatestPhoto() {
+            fetch("/latest_photo")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.photo_name) {
+                        updatePhoto(data.photo_name);
+                    }
+                }).catch(error => console.error("최신 사진 불러오기 오류:", error));
+        }
+
+        function downloadPhoto() {
+            window.location.href = "/download_current";
+        }
+
+        function downloadAllPhotos() {
+            window.location.href = "/download_all";
+        }
+
+        // Socket.IO 연결
+        const socket = io();
+
+        // 서버로부터 로그 메시지를 수신하여 화면에 추가
+        socket.on('log', (msg) => {
+            const logContainer = document.getElementById('log-container');
+            const logMessage = document.createElement('div');
+            logMessage.className = 'log-message';
+            logMessage.textContent = msg.data;
+
+            // 로그 메시지를 추가하고 스크롤을 최신 상태로 유지
+            logContainer.appendChild(logMessage);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        });
+
+        // 주기적으로 온도 상태 업데이트
+        setInterval(updateTemperature, 3000);
+
+        // 페이지 로드 시 최신 사진 요청
+        window.onload = getLatestPhoto;
+    </script>
 </body>
 </html>

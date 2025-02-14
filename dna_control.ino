@@ -20,6 +20,9 @@ const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 float temperatureSamples[SAMPLE_SIZE];
 int sampleIndex = 0;
 
+unsigned long heaterStartTime = 0; // 히터가 켜진 시간을 저장할 변수
+const unsigned long heaterMaxDuration = 1*60000; // 히터 최대 동작 시간 (1분 = 60000ms)
+
 // 전역 변수
 float currentTemperature = 0.0; // 실시간 온도 저장
 bool heaterOn = false;          // 히터 상태
@@ -41,7 +44,7 @@ float readTemperature() {
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     averageTemperature += temperatureSamples[i];
   }
-  return averageTemperature / SAMPLE_SIZE; // 평균 온도 반환
+  const unsigned long heaterMaxDuration = 1*60000;
 }
 
 void setup() {
@@ -60,6 +63,16 @@ void setup() {
 }
 
 void loop() {
+
+  void loop() {
+    if (heaterOn) {
+      if (millis() - heaterStartTime > heaterMaxDuration) {
+        // 히터가 1분 이상 동작한 경우 자동 OFF
+        digitalWrite(HEATER_PIN, LOW);
+        heaterOn = false;
+        Serial.println("히터가 최대 동작 시간을 초과하여 OFF되었습니다.");
+      }
+    }
   // 명령어 수신 확인
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n'); // 명령어 읽기 (줄바꿈 기준)
@@ -77,6 +90,7 @@ void loop() {
       digitalWrite(ledPin, LOW);  // LED 끄기
     }
   }
+}
 
   // 온도 읽기
   currentTemperature = readTemperature();

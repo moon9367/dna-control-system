@@ -2,16 +2,13 @@ import os
 import serial
 import threading
 import time
-import threading
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
-from flask_socketio import SocketIO
 from picamera2 import Picamera2, libcamera  # libcamera 가져오기
 import zipfile
 
 # Flask 설정
 app = Flask(__name__)
-socketio = SocketIO(app)
 picam2 = Picamera2()
 
 # 카메라 설정
@@ -230,28 +227,6 @@ def delete_all_photos():
             os.remove(file_path)
     return jsonify({"message": "모든 사진이 삭제되었습니다."})
 
-from flask import Flask, render_template
-from flask_socketio import SocketIO
-import time
-import threading
-
-app = Flask(__name__)
-socketio = SocketIO(app)
-
-# 로그 전송 함수
-def send_logs():
-    while True:
-        log_message = f"현재 시간: {time.strftime('%Y-%m-%d %H:%M:%S')}"  # 예제 로그 메시지
-        socketio.emit('log', {'data': log_message})  # 클라이언트로 로그 전송
-        time.sleep(2)  # 2초마다 전송
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-# 서버 시작 시 로그 전송 스레드 시작
-threading.Thread(target=send_logs, daemon=True).start()
-
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000)

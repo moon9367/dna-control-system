@@ -24,7 +24,7 @@ unsigned long heaterStartTime = 0;         // 히터가 켜진 시간을 저장�
 const unsigned long heaterMaxDuration = 40 * 60000; // 히터 최대 동작 시간 (40분)
 
 unsigned long ledStartTime = 0;            // LED가 켜진 시간을 저장할 변수
-const unsigned long ledMaxDuration = 1 * 60000; // LED 최대 동작 시간 (15분)
+const unsigned long ledMaxDuration = 15 * 60000; // LED 최대 동작 시간 (15분)
 
 // 전역 변수
 float currentTemperature = 0.0; // 실시간 온도 저장

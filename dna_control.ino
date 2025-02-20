@@ -12,7 +12,7 @@ const int refTemp = 25;           // 기준 온도 (섭씨)
 const int refResistance = 100000; // 기준 저항 값 (100K)
 
 // 목표 온도
-const float targetTemperature = 40.0;  // "HEATER_ON" 명령 시 유지할 온도
+const float targetTemperature = 60.0;  // "HEATER_ON" 명령 시 유지할 온도
 const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 
 // 이동 평균 필터 설정
@@ -80,6 +80,8 @@ void loop() {
     } else if (command == "LED_ON") {
       digitalWrite(ledPin, HIGH); // LED 켜기
       Serial.println("LED가 켜졌습니다.");
+      delay(15*60000); // 15분 후 자동 종료 안전 기능
+      digitalWrite(ledPin, LOW);
     } else if (command == "LED_OFF") {
       digitalWrite(ledPin, LOW);  // LED 끄기
       Serial.println("LED가 꺼졌습니다.");

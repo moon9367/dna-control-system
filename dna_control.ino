@@ -20,12 +20,16 @@ const float temperatureThreshold = 2.0; // 허용 오차 (±2°C)
 float temperatureSamples[SAMPLE_SIZE];
 int sampleIndex = 0;
 
-unsigned long heaterStartTime = 0;        // 히터가 켜진 시간을 저장할 변수
-const unsigned long heaterMaxDuration = 40*60000; // 히터 최대 동작 시간 (1분)
+unsigned long heaterStartTime = 0;         // 히터가 켜진 시간을 저장할 변수
+const unsigned long heaterMaxDuration = 40 * 60000; // 히터 최대 동작 시간 (40분)
+
+unsigned long ledStartTime = 0;            // LED가 켜진 시간을 저장할 변수
+const unsigned long ledMaxDuration = 1 * 60000; // LED 최대 동작 시간 (15분)
 
 // 전역 변수
 float currentTemperature = 0.0; // 실시간 온도 저장
 bool heaterOn = false;          // 히터 상태
+bool ledOn = false;             // LED 상태
 
 // 온도 계산 함수
 float readTemperature() {
@@ -78,11 +82,12 @@ void loop() {
       digitalWrite(heaterPin, LOW); // 히터 끄기
       Serial.println("히터가 꺼졌습니다.");
     } else if (command == "LED_ON") {
+      ledOn = true;
+      ledStartTime = millis(); // LED 시작 시간 기록
       digitalWrite(ledPin, HIGH); // LED 켜기
       Serial.println("LED가 켜졌습니다.");
-      delay(15*60000); // 15분 후 자동 종료 안전 기능
-      digitalWrite(ledPin, LOW);
     } else if (command == "LED_OFF") {
+      ledOn = false;
       digitalWrite(ledPin, LOW);  // LED 끄기
       Serial.println("LED가 꺼졌습니다.");
     }
@@ -106,6 +111,13 @@ void loop() {
         digitalWrite(heaterPin, LOW); // 히터 끄기
       }
     }
+  }
+
+  // LED 자동 OFF 처리 (15분 후)
+  if (ledOn && millis() - ledStartTime > ledMaxDuration) {
+    ledOn = false;
+    digitalWrite(ledPin, LOW);
+    Serial.println("LED가 최대 동작 시간을 초과하여 OFF되었습니다.");
   }
 
   // 온도 데이터 전송
